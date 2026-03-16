@@ -83,6 +83,8 @@ class MainActivity : AppCompatActivity() {
             stopWatchViewModel.deleteLapRecord()
             // 将间隔时间清零重来
             stopWatchViewModel.intervalReset()
+            // 间隔时间不显示
+            stopWatchViewModel.firstInterval.value = false
         }
 
         binding.btnRightStopWatch.setOnClickListener {
@@ -225,6 +227,12 @@ class MainActivity : AppCompatActivity() {
             GlideUtil.createGlideUtil().loadImage(this,R.drawable.ic_add,binding.add)
 
             binding.add.imageAlpha = 255
+
+            binding.btnLeftStopWatch.animate()
+                .translationX(0f)
+                .alpha(0f)
+                .setDuration(300)
+                .start()
 
             binding.btnRightStopWatch.animate()
                 .translationX(0f)

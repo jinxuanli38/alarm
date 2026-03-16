@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.alarm_jinxuan.databinding.ItemQuickNoteBinding
 import com.example.alarm_jinxuan.model.LapRecord
 
-class LapAdapter : ListAdapter<LapRecord, LapAdapter.ViewHolder>(DiffCallback()) {
+class LapAdapter() : ListAdapter<LapRecord, LapAdapter.ViewHolder>(DiffCallback()) {
     class ViewHolder(val binding: ItemQuickNoteBinding) : RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(

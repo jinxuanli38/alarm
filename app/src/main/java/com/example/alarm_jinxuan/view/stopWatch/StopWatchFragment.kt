@@ -70,6 +70,8 @@ class StopWatchFragment : Fragment() {
         viewModel.firstInterval.observe(viewLifecycleOwner) { value ->
             if (value) {
                 binding.breakPoint.visibility = View.VISIBLE
+            } else {
+                binding.breakPoint.visibility = View.INVISIBLE
             }
         }
 
@@ -83,8 +85,7 @@ class StopWatchFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.laps.collect { newList ->
-                    lapAdapter.submitList(newList)
-                    if (newList.isNotEmpty()) {
+                    lapAdapter.submitList(newList) {
                         binding.laps.scrollToPosition(0)
                     }
                 }
@@ -160,7 +161,7 @@ class StopWatchFragment : Fragment() {
                 val needleGap = 3.5.dp.toPx(density)
                 val needleTail = 10.dp.toPx(density)
                 val needleWidth = 1.5.dp.toPx(density)
-                val ringRadius = 2.5.dp.toPx(density)
+                val ringRadius = 3.dp.toPx(density)
                 val ringStroke = 1.5.dp.toPx(density)
             }
         }
