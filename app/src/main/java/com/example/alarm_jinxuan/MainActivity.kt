@@ -1,5 +1,6 @@
 package com.example.alarm_jinxuan
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -14,6 +15,8 @@ import com.example.alarm_jinxuan.view.stopWatch.StopWatchFragment
 import com.example.alarm_jinxuan.view.timer.TimerFragment
 import com.example.alarm_jinxuan.view.worldClock.WorldClockFragment
 import com.example.alarm_jinxuan.utils.GlideUtil
+import com.example.alarm_jinxuan.view.addAlarm.AddAlarmActivity
+import com.example.alarm_jinxuan.view.addCity.AddCityActivity
 import com.example.alarm_jinxuan.view.stopWatch.StopWatchViewModel
 import kotlinx.coroutines.launch
 
@@ -108,9 +111,11 @@ class MainActivity : AppCompatActivity() {
 
         binding.add.setOnClickListener {
             if (currentFragment == tagAlarm) {
-
+                val intent = Intent(this, AddAlarmActivity::class.java)
+                startActivity(intent)
             } else if (currentFragment == tagWorldClock) {
-
+                val intent = Intent(this, AddCityActivity::class.java)
+                startActivity(intent)
             } else if (currentFragment == tagStopWatch) {
                 stopWatchViewModel.toggle()
             } else {

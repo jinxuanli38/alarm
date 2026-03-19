@@ -4,6 +4,24 @@
     <string name="alarm">闹钟</string>
     <string name="timer">计时</string>
     <string name="stop_watch">秒表</string>
+    <string name="china_standard_time">中国标准时间</string>
+    <string name="add_city">添加城市</string>
+    <string name="search_city">搜索城市</string>
+    <string name="alarm_rings">14 小时 14 分钟后响铃</string>
+    <string name="add_alarm">新建闹钟</string>
+    <string name="repeat">重复</string>
+    <string name="no_repeat">不重复</string>
+    <string name="legal_working_day">法定工作日 (智能跳过节假日)</string>
+    <string name="wlan">通过移动网络或 WLAN 下载更新节假日信息</string>
+    <string name="alarm_ring">闹钟铃声</string>
+    <string name="alarm_name">闹钟名</string>
+    <string name="ringing_duration">响铃时长</string>
+    <string name="beep_interval">再响间隔</string>
+    <string name="vibration">振动</string>
+    <string name="standard">标准</string>
+    <string name="recommend_ring">推荐铃声</string>
+    <string name="classic_ring">经典铃声</string>
+    <string name="confirm_update">是否保存更改？</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

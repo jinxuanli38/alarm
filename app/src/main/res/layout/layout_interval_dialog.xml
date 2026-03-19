@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="@android:color/white"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="8dp"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.9">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="20dp">
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+
+                android:text="@string/beep_interval"
+                android:textColor="@color/black"
+                android:textSize="20sp"
+                android:textStyle="bold"
+
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/text_beep_interval"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                android:text="响铃间隔时间（分钟）"
+
+                app:layout_constraintTop_toBottomOf="@+id/title"/>
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_interval"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                android:valueFrom="5.0"
+                android:valueTo="30.0"
+                android:value="10.0"
+                android:stepSize="5.0"
+
+                app:thumbColor="@android:color/white"
+                app:thumbElevation="4dp"
+                app:trackColorActive="@color/shallow_blue"
+                app:trackColorInactive="@color/shallow_light_gray"
+                app:haloColor="@color/halo"
+                app:labelBehavior="withinBounds"
+
+                app:layout_constraintTop_toBottomOf="@id/text_beep_interval"/>
+
+            <TextView
+                android:id="@+id/repeat_count"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                android:text="重复响铃次数"
+
+                app:layout_constraintTop_toBottomOf="@+id/slider_interval"/>
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_repeat"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                android:valueFrom="1.0"
+                android:valueTo="5.0"
+                android:value="3.0"
+                android:stepSize="1.0"
+
+                app:thumbColor="@android:color/white"
+                app:thumbElevation="4dp"
+                app:trackColorActive="@color/shallow_blue"
+                app:trackColorInactive="@color/shallow_light_gray"
+                app:haloColor="@color/halo"
+                app:labelBehavior="withinBounds"
+
+                app:layout_constraintTop_toBottomOf="@id/repeat_count"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+
+                android:layout_marginTop="10dp"
+                app:layout_constraintTop_toBottomOf="@+id/slider_repeat">
+
+                <TextView
+                    android:id="@+id/btn_cancel"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="@drawable/bg_btn_ripple"
+                    android:gravity="center"
+
+                    android:text="取消"
+                    android:textColor="#448AFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="24dp"
+                    android:background="#DDDDDD"
+
+                    android:layout_marginStart="5dp"
+                    android:layout_marginEnd="5dp"/>
+
+                <TextView
+                    android:id="@+id/btn_confirm"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="@drawable/bg_btn_ripple"
+                    android:gravity="center"
+
+                    android:text="确定"
+                    android:textColor="#448AFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

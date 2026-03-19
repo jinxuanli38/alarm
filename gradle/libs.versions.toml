@@ -16,6 +16,9 @@ activity = "1.7.2"
 lifecycle = "2.6.2"
 room = "2.6.1"
 ksp = "2.0.21-1.0.25"
+appcompat = "1.7.1"
+activityVersion = "1.12.4"
+wheelpicker = "1.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -42,6 +45,9 @@ viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activityVersion" }
+wheelpicker-aige = { group = "dev.aige.pub", name = "WheelPicker", version.ref = "wheelpicker" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -54,6 +54,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.constraintlayout)
     implementation(libs.material)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.activity)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -69,4 +71,5 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.glide.ksp)
     ksp(libs.room.compiler)
+    implementation(libs.wheelpicker.aige)
 }

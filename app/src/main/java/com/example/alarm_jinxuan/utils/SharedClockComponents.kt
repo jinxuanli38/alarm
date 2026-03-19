@@ -2,14 +2,27 @@ package com.example.alarm_jinxuan.utils
 
 import android.graphics.Paint
 import android.graphics.Typeface
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -25,9 +38,12 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import java.util.Calendar
 import kotlin.math.cos
@@ -45,6 +61,12 @@ object SharedClockComponents {
         modifier: Modifier = Modifier,
         clockSize: Dp = 300.dp
     ) {
+        // 控制显示模式：true=钟表模式，false=电子时间模式
+        var showAnalogClock by remember { mutableStateOf(true) }
+
+        // 用于消除点击水波纹效果的交互源
+        val interactionSource = remember { MutableInteractionSource() }
+
         var timeMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
         // 实时更新时间
@@ -57,6 +79,58 @@ object SharedClockComponents {
             }
         }
 
+        Box(
+            modifier = modifier
+                .size(clockSize)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null
+                ) {
+                    // 点击切换显示模式
+                    showAnalogClock = !showAnalogClock
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            // 模拟钟表显示（带缩放动画）
+            AnimatedVisibility(
+                visible = showAnalogClock,
+                enter = fadeIn(animationSpec = tween(durationMillis = 200)) + scaleIn(
+                    animationSpec = tween(durationMillis = 200),
+                    initialScale = 0.7f
+                ),
+                exit = fadeOut(animationSpec = tween(durationMillis = 200)) + scaleOut(
+                    animationSpec = tween(durationMillis = 200),
+                    targetScale = 0.7f
+                )
+            ) {
+                AnalogClockDisplay(timeMillis, clockSize)
+            }
+
+            // 电子时间显示（带缩放动画）
+            AnimatedVisibility(
+                visible = !showAnalogClock,
+                enter = fadeIn(animationSpec = tween(durationMillis = 200)) + scaleIn(
+                    animationSpec = tween(durationMillis = 200),
+                    initialScale = 0.7f
+                ),
+                exit = fadeOut(animationSpec = tween(durationMillis = 200)) + scaleOut(
+                    animationSpec = tween(durationMillis = 200),
+                    targetScale = 0.7f
+                )
+            ) {
+                DigitalTimeDisplay(timeMillis)
+            }
+        }
+    }
+
+    /**
+     * 模拟时钟显示
+     */
+    @Composable
+    private fun AnalogClockDisplay(
+        timeMillis: Long,
+        clockSize: Dp
+    ) {
         // 角度计算（为了丝滑，必须把毫秒算进去）
         val cal = Calendar.getInstance().apply { timeInMillis = timeMillis }
         val millis = cal.get(Calendar.MILLISECOND)
@@ -103,12 +177,52 @@ object SharedClockComponents {
         }
 
         // 绘制时钟
-        Canvas(modifier = modifier.size(clockSize)) {
+        Canvas(modifier = Modifier.size(clockSize)) {
             val radius = size.width / 2
             val center = size.center
 
             drawClockTicks(radius, center, metrics, textPaint)
-            drawHands(center, hourAngle, minuteAngle, secondAngle, hourHandPath, minuteHandPath, metrics, radius)
+            drawHands(center, hourAngle, minuteAngle, secondAngle, hourHandPath, minuteHandPath, metrics, radius, density)
+        }
+    }
+
+    /**
+     * 电子时间显示
+     */
+    @Composable
+    private fun DigitalTimeDisplay(timeMillis: Long) {
+        val cal = Calendar.getInstance().apply { timeInMillis = timeMillis }
+        val hourOfDay = cal.get(Calendar.HOUR_OF_DAY)
+        val minute = cal.get(Calendar.MINUTE)
+        val second = cal.get(Calendar.SECOND)
+
+        // 判断上午/下午（0-12是上午，12-24是下午）
+        val amPm = if (hourOfDay < 12) "上午" else "下午"
+
+        // 12小时制的小时数
+        val hour12 = if (hourOfDay == 0) 12 else (if (hourOfDay > 12) hourOfDay - 12 else hourOfDay)
+
+        // 格式化时间字符串，保证两位数显示
+        val timeString = "%02d:%02d:%02d".format(hour12, minute, second)
+
+        Box(
+            contentAlignment = Alignment.Center
+        ) {
+            Column {
+                Text(
+                    text = timeString,
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color.Black
+                )
+                Text(
+                    text = amPm,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Gray
+                )
+            }
         }
     }
 
@@ -281,13 +395,42 @@ object SharedClockComponents {
         hourHandPath: Path,
         minuteHandPath: Path,
         metrics: ClockMetrics,
-        radius: Float
+        radius: Float,
+        density: Density
     ) {
         // 绘制时针
         rotate(degrees = hourAngle, pivot = center) {
             withTransform({
                 translate(left = center.x, top = center.y)
             }) {
+                // 创建实心遮挡层（不包含空心部分）
+                val solidPath = Path().apply {
+                    fillType = PathFillType.NonZero
+                    val widthBase = 5.dp.toPx(density)
+                    val totalLength = radius * 0.55f
+                    val cornerRadius = 2.dp.toPx(density)
+                    val startY = -metrics.ringRadius
+
+                    moveTo(-widthBase / 2f, startY)
+                    lineTo(-widthBase / 2f, -totalLength + cornerRadius)
+                    arcTo(
+                        rect = Rect(
+                            left = -widthBase / 2,
+                            top = -totalLength,
+                            right = widthBase / 2,
+                            bottom = -totalLength + cornerRadius * 2
+                        ),
+                        startAngleDegrees = 180f,
+                        sweepAngleDegrees = 180f,
+                        forceMoveTo = false
+                    )
+                    lineTo(widthBase / 2f, startY)
+                    close()
+                }
+
+                // 先绘制实心背景遮挡数字
+                drawPath(path = solidPath, color = Color.White)
+                // 再绘制实际的空心指针
                 drawPath(path = hourHandPath, color = Color.Black)
             }
         }
@@ -297,6 +440,34 @@ object SharedClockComponents {
             withTransform({
                 translate(left = center.x, top = center.y)
             }) {
+                // 创建实心遮挡层（不包含空心部分）
+                val solidPath = Path().apply {
+                    fillType = PathFillType.NonZero
+                    val widthBase = 4.dp.toPx(density)
+                    val totalLength = radius * 0.8f
+                    val cornerRadius = 1.5.dp.toPx(density)
+                    val startY = -metrics.ringRadius
+
+                    moveTo(-widthBase / 2f, startY)
+                    lineTo(-widthBase / 2f, -totalLength + cornerRadius)
+                    arcTo(
+                        rect = Rect(
+                            left = -widthBase / 2f,
+                            top = -totalLength,
+                            right = widthBase / 2f,
+                            bottom = -totalLength + cornerRadius * 2f
+                        ),
+                        startAngleDegrees = 180f,
+                        sweepAngleDegrees = 180f,
+                        forceMoveTo = false
+                    )
+                    lineTo(widthBase / 2f, startY)
+                    close()
+                }
+
+                // 先绘制实心背景遮挡数字
+                drawPath(path = solidPath, color = Color.White)
+                // 再绘制实际的空心指针
                 drawPath(path = minuteHandPath, color = Color.Black)
             }
         }
