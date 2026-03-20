@@ -4,55 +4,76 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="?attr/selectableItemBackground"
-    android:padding="16dp">
+    >
 
-    <TextView
-        android:id="@+id/day_period"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/main"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
 
-        android:text="早上"
-        android:textSize="18sp"
-        android:textColor="@color/black"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/switch_workday"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
+        <TextView
+            android:id="@+id/period"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/afternoon"
+            android:textColor="@color/black"
+            android:textSize="16sp"
 
-    <TextView
-        android:id="@+id/time"
+            app:layout_constraintBottom_toBottomOf="@+id/al_clock"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/al_clock" />
+
+        <TextView
+            android:id="@+id/al_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:text="@string/al_clock"
+            android:textColor="@color/black"
+
+            android:textSize="22sp"
+
+            app:layout_constraintStart_toEndOf="@+id/period"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/alarm_name_week"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/alarm_repeat"
+            android:textColor="@color/light_gray"
+            android:textSize="14sp"
+
+            android:layout_marginTop="5dp"
+
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/period" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switch_workday"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:checked="false"
 
-        android:text="8:00"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@color/black"
-
-        android:layout_marginStart="5dp"
-
-        app:layout_constraintStart_toEndOf="@+id/day_period"
-        app:layout_constraintBottom_toBottomOf="@+id/day_period"/>
-
-    <TextView
-        android:id="@+id/alarm_name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-
-        android:layout_marginTop="5dp"
-        android:text="闹钟，周一 周二 周三 周四 周五 周六 周日"
-
-        app:layout_constraintTop_toBottomOf="@+id/time"
-        app:layout_constraintStart_toStartOf="@id/day_period"/>
-
-    <com.google.android.material.materialswitch.MaterialSwitch
-        android:id="@+id/alarm_switch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-
-        android:checked="true"
-
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+
+        app:layout_constraintTop_toTopOf="parent"
+        app:thumbTint="@android:color/white"
+        app:trackTint="@color/switch_track_selector" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_marginTop="10dp"
+        android:background="#EEEEEE"
+
+        app:layout_constraintTop_toBottomOf="@+id/main" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

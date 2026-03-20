@@ -12,9 +12,13 @@
     <string name="repeat">重复</string>
     <string name="no_repeat">不重复</string>
     <string name="legal_working_day">法定工作日 (智能跳过节假日)</string>
+    <string name="afternoon">下午</string>
+    <string name="al_clock">4:16</string>
+    <string name="alarm_repeat">闹钟，不重复</string>
     <string name="wlan">通过移动网络或 WLAN 下载更新节假日信息</string>
     <string name="alarm_ring">闹钟铃声</string>
     <string name="alarm_name">闹钟名</string>
+    <string name="has_no_clock">没有闹钟</string>
     <string name="ringing_duration">响铃时长</string>
     <string name="beep_interval">再响间隔</string>
     <string name="vibration">振动</string>
@@ -22,6 +26,8 @@
     <string name="recommend_ring">推荐铃声</string>
     <string name="classic_ring">经典铃声</string>
     <string name="confirm_update">是否保存更改？</string>
+    <string name="give_up">放弃</string>
+    <string name="save">保存</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

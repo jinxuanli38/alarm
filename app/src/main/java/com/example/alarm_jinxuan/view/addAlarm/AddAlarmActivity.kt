@@ -7,8 +7,11 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.alarm_jinxuan.databinding.ActivityAddAlarmBinding
 import com.example.alarm_jinxuan.databinding.LayoutAlarmDurationBinding
 import com.example.alarm_jinxuan.databinding.LayoutAlarmNameDialogBinding
@@ -16,13 +19,18 @@ import com.example.alarm_jinxuan.databinding.LayoutConfirmDialogBinding
 import com.example.alarm_jinxuan.databinding.LayoutIntervalDialogBinding
 import com.example.alarm_jinxuan.databinding.LayoutRepeatDialogBinding
 import com.example.alarm_jinxuan.model.AddAlarmClockManager
+import com.example.alarm_jinxuan.model.AlarmEntity
 import com.example.alarm_jinxuan.model.DurationOption
 import com.example.alarm_jinxuan.model.RepeatDay
 import com.example.alarm_jinxuan.view.alarmClockRing.AlarmClockRingActivity
+import kotlinx.coroutines.launch
+import java.util.Calendar
+import kotlin.getValue
 
 class AddAlarmActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddAlarmBinding
     private lateinit var repeatAdapter: RepeatAdapter
+    private val viewModel: AddAlarmViewModel by viewModels()
 
     private val dataList = listOf("周日", "周一", "周二", "周三", "周四", "周五", "周六")
         .mapIndexed { index, name -> RepeatDay(index, name) }
@@ -47,11 +55,20 @@ class AddAlarmActivity : AppCompatActivity() {
     // 3. 分钟数据 (00-59)
     val minuteData = (0..59).map { String.format("%02d", it) }
 
-    // 小时上一次选中的位置
-    private var lastHourIndex = -1
+    // 1. 小时数据 (1..12) 的 Int 集合
+    val hourDataInt = (1..12).toList()
 
-    // 分钟上一次选中的位置
-    private var lastMinutePos = -1
+    // 2. 分钟数据 (0..59) 的 Int 集合
+    val minuteDataInt = (0..59).toList()
+
+    // 当前的响铃时长
+    private var currentRingMinute = 5
+
+    // 当前的响铃间隔时间（分钟）
+    private var intervalRingValue = 10
+
+    // 当前的重复响铃次数
+    private var repeatRingValue = 3
 
     // 是否发生了修改
     private var isUpdateBool = false
@@ -63,10 +80,6 @@ class AddAlarmActivity : AppCompatActivity() {
         binding = ActivityAddAlarmBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.back.setOnClickListener {
-            finish()
-        }
-
         binding.wheelPeriod.apply {
             data = periodData
         }
@@ -76,6 +89,9 @@ class AddAlarmActivity : AppCompatActivity() {
         binding.wheelMinute.apply {
             data = minuteData
         }
+
+        // 更新当前选择时间
+        selectWheel()
 
         // 修改星期几
         binding.itemRepeat.setOnClickListener { repeatDialog() }
@@ -108,6 +124,27 @@ class AddAlarmActivity : AppCompatActivity() {
                 finish()
             }
         }
+
+        // 保存数据
+        binding.success.setOnClickListener {
+            save()
+        }
+    }
+
+    private fun selectWheel() {
+        val calendar = Calendar.getInstance()
+        // 获取上午、下午
+        val amPm = calendar.get(Calendar.AM_PM)
+        binding.wheelPeriod.selectedItemPosition = amPm
+        // 获取12小时制的时间
+        var hour12 = calendar.get(Calendar.HOUR)
+        // 0点换成12点
+        if (hour12 == 0) hour12 = 12
+
+        binding.wheelHour.selectedItemPosition = hour12 - 1
+
+        val minute = calendar.get(Calendar.MINUTE)
+        binding.wheelMinute.selectedItemPosition = minute
     }
 
     /**
@@ -140,6 +177,11 @@ class AddAlarmActivity : AppCompatActivity() {
             dataList[position].isChecked = !dataList[position].isChecked
 
             repeatAdapter.notifyItemChanged(position)
+
+            // 全部选择需要更改为每天
+            if (dataList.all { it.isChecked }) {
+                binding.tvRepeatValue.text = "每天"
+            }
         }
 
         dialogBinding.rvRepeat.apply {
@@ -239,6 +281,9 @@ class AddAlarmActivity : AppCompatActivity() {
         val durationAdapter = DurationAdapter(durationData) { selectedOption ->
             binding.textDuration.text = selectedOption.label
 
+            // 更改当前响铃时长
+            currentRingMinute = selectedOption.minute
+
             dialog.dismiss()
         }
 
@@ -274,12 +319,21 @@ class AddAlarmActivity : AppCompatActivity() {
             }
         }
         dialog.setCanceledOnTouchOutside(false)
+        // 沿用上次选择数据
+        dialogBinding.sliderInterval.value = intervalRingValue.toFloat()
+        dialogBinding.sliderRepeat.value = repeatRingValue.toFloat()
 
         dialogBinding.btnCancel.setOnClickListener {
             dialog.dismiss()
         }
 
         dialogBinding.btnConfirm.setOnClickListener {
+            intervalRingValue = dialogBinding.sliderInterval.value.toInt()
+            repeatRingValue = dialogBinding.sliderRepeat.value.toInt()
+
+            // 进行格式化展示
+            val result = String.format("%d 分钟，%d 次", intervalRingValue, repeatRingValue)
+            binding.beepIntervalValue.text = result
 
             dialog.dismiss()
         }
@@ -287,6 +341,7 @@ class AddAlarmActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    // 确认是否保存的弹窗
     private fun popConfirmDialog() {
         val dialog = Dialog(this)
 
@@ -304,17 +359,110 @@ class AddAlarmActivity : AppCompatActivity() {
         }
         dialog.setCanceledOnTouchOutside(false)
 
+        // 放弃保存
         dialogBinding.btnCancel.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        dialogBinding.btnConfirm.setOnClickListener {
+            // 必须恢复初始状态
             AddAlarmClockManager.clear()
 
             dialog.dismiss()
             finish()
         }
 
+        // 确认保存
+        dialogBinding.btnConfirm.setOnClickListener {
+            AddAlarmClockManager.clear()
+
+            dialog.dismiss()
+            // 同时需要保存到数据库
+            save()
+        }
+
         dialog.show()
     }
+
+    /**
+     * 保存到数据库
+     */
+    private fun save() {
+        // 先整理时间
+        val periodPosition = binding.wheelPeriod.selectedItemPosition
+        val period = periodData[periodPosition]
+        val hourPosition = binding.wheelHour.selectedItemPosition
+        val hour = hourDataInt[hourPosition]
+        val minutePosition = binding.wheelMinute.selectedItemPosition
+        val minute = minuteDataInt[minutePosition]
+
+        // 整理时间称呼的同时完成24小时转换
+        val (displayPeriod, h24) = if (period == "上午") {
+            when (hour) {
+                12 -> "半夜" to 0
+                in 1..4 -> "凌晨" to hour
+                in 5..6 -> "清晨" to hour
+                in 7..8 -> "早上" to hour
+                else -> "上午" to hour
+            }
+        } else {
+            when (hour) {
+                12 -> "中午" to 12
+                in 1..4 -> "下午" to hour + 12
+                in 5..6 -> "傍晚" to hour + 12
+                in 7..10 -> "晚上" to hour + 12
+                else -> "半夜" to 23
+            }
+        }
+        // 整理星期
+        val repeatDataString = dataList.joinToString(",") { if (it.isChecked) "1" else "0" }
+        // 整理显示文字
+        val checkedNames = dataList.filter { it.isChecked }.map { it.name }
+        val repeatText = when {
+            checkedNames.size == 7 -> "每天"
+            checkedNames.isEmpty() -> "不重复"
+            else -> checkedNames.joinToString(", ")
+        }
+        // 整理对象
+        val newAlarm = AlarmEntity(
+            period = displayPeriod,
+            hour = hour,
+            minute = minute,
+            hour24 = h24,
+            isEnabled = true, // 默认为打开状态
+
+            repeatText = repeatText,
+            repeatData = repeatDataString,
+
+            ringtoneName = AddAlarmClockManager.tempRingtoneName,
+            ringtoneFileName = AddAlarmClockManager.tempRingtoneFileName,
+            vibrationName = AddAlarmClockManager.tempVibrationName,
+            vibrationId = AddAlarmClockManager.tempVibrationId,
+
+            ringDuration = currentRingMinute,
+            snoozeInterval = intervalRingValue,
+            snoozeCount = repeatRingValue,
+
+            label = "闹钟"
+        )
+        // 存储到数据库
+        lifecycleScope.launch {
+            val rowId = viewModel.insertAlarm(newAlarm)
+
+            if (rowId != -1L) {
+                val triggerTime = viewModel.calculateNextTriggerTime(newAlarm)
+                val (h, m) = viewModel.getRemainingTime(triggerTime)
+
+                Toast.makeText(applicationContext, "$h 小时 $m 分钟后响铃", Toast.LENGTH_SHORT).show()
+
+                // 返回页面
+                finish()
+            } else {
+                Toast.makeText(applicationContext, "保存失败，请重试", Toast.LENGTH_SHORT).show()
+            }
+
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.ringToneName.text = AddAlarmClockManager.tempRingtoneName
+    }
+
 }

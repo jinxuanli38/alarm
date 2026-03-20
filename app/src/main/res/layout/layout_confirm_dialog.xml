@@ -58,7 +58,7 @@
                     android:background="@drawable/bg_btn_ripple"
                     android:gravity="center"
 
-                    android:text="取消"
+                    android:text="@string/give_up"
                     android:textColor="#448AFF"
                     android:textSize="16sp"
                     android:textStyle="bold"/>
@@ -82,7 +82,7 @@
                     android:background="@drawable/bg_btn_ripple"
                     android:gravity="center"
 
-                    android:text="确定"
+                    android:text="@string/save"
                     android:textColor="#448AFF"
                     android:textSize="16sp"
                     android:textStyle="bold" />

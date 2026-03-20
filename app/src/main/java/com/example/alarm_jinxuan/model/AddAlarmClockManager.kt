@@ -8,10 +8,13 @@ object AddAlarmClockManager {
     var tempVibrationName: String = "标准 (默认)"
 
     // 铃声Id
-    var tempRingtoneId: Int = 0
+    var tempRingtoneId: Int = -1
 
     // 铃声昵称
     var tempRingtoneName: String = "Morning Light"
+
+    // 铃声文件名
+    var tempRingtoneFileName: String = "alarm_morning_light"
 
     val vibrationList = listOf(
         VibrationOption(0, "标准 (默认)", longArrayOf(0, 500, 250, 500), true),
@@ -53,6 +56,11 @@ object AddAlarmClockManager {
         VibrationOption(8, "无振动", longArrayOf(0, 0), false)
     )
 
+    // 获取当前震动pattern
+    val currentVibrationPattern: LongArray
+        get() = vibrationList.find { it.id == tempVibrationId }?.pattern
+            ?: longArrayOf(0, 0) // 如果没找到，默认不震动
+
     // 初始化（编辑页面时调用）
     fun init(id: Int) {
         tempVibrationId = id
@@ -62,5 +70,8 @@ object AddAlarmClockManager {
     fun clear() {
         tempVibrationId = 0
         tempVibrationName = "标准 (默认)"
+        tempRingtoneName = "Morning Light"
+        tempRingtoneId = -1
+        tempRingtoneFileName = "alarm_morning_light"
     }
 }

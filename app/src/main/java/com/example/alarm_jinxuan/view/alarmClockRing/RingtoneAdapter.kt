@@ -15,9 +15,9 @@ class RingtoneAdapter(
     // 记录当前选中的位置
     private var selectedPosition: Int = ringtoneList.indexOfFirst { 
         it.id == AddAlarmClockManager.tempRingtoneId
-    }.let { if (it == -1) 0 else it }
+    }
 
-    inner class RingtoneViewHolder(val binding: ItemRingtoneBinding) :
+    class RingtoneViewHolder(val binding: ItemRingtoneBinding) :
         RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RingtoneViewHolder {
@@ -52,4 +52,14 @@ class RingtoneAdapter(
     }
 
     override fun getItemCount() = ringtoneList.size
+
+    // 在 RingtoneAdapter.kt 里面加
+    fun deselectAll() {
+        val oldPos = selectedPosition
+        selectedPosition = -1 // -1 表示列表里谁都不选
+        if (oldPos != -1) {
+            notifyItemChanged(oldPos) // 刷新那个曾经被选中的项，让它的 RadioButton 变成未选中
+        }
+    }
+
 }

@@ -4,15 +4,18 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.alarm_jinxuan.model.AlarmEntity
 import com.example.alarm_jinxuan.model.LapRecord
 import com.example.alarm_jinxuan.model.StopwatchState
 
-@Database(entities = [LapRecord::class, StopwatchState::class], version = 1, exportSchema = false)
+@Database(entities = [LapRecord::class, StopwatchState::class, AlarmEntity::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun lapDao(): LapDao
 
     abstract fun stopWatch(): StopwatchStateDao
+
+    abstract fun alarm(): AlarmDao
 
     companion object {
         @Volatile
