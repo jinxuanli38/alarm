@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,10 +21,12 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.alarm_jinxuan.databinding.FragmentAlarmBinding
 import com.example.alarm_jinxuan.model.AlarmEntity
 import com.example.alarm_jinxuan.utils.AlarmManagerUtils
+import com.example.alarm_jinxuan.utils.PermissionUtils
 import com.example.alarm_jinxuan.utils.SharedClockComponents
 import com.example.alarm_jinxuan.utils.StringUtils
 import com.example.alarm_jinxuan.view.addAlarm.AddAlarmActivity
 import com.example.alarm_jinxuan.view.addAlarm.AddAlarmViewModel
+import com.example.alarm_jinxuan.view.addCity.AddCityActivity
 import kotlinx.coroutines.launch
 
 class AlarmFragment : Fragment() {
@@ -56,6 +59,35 @@ class AlarmFragment : Fragment() {
             }
         }
 
+        binding.edit.setOnClickListener { view ->
+            // 1. 实例化 PopupMenu，绑定在当前点击的 view 上
+            val popup = PopupMenu(requireContext(), view)
+
+            // 2. 动态添加菜单项：参数分别为 (组ID, 项目ID, 排序, 标题文本)
+            popup.menu.add(0, 0, 0, "跳转“自启动”")
+
+            // 3. 处理菜单点击事件
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    0 -> {
+                        // --- 这里放入你写好的 Intent 跳转逻辑 ---
+                        startAutoStartActivity()
+                        true
+                    }
+                    else -> false
+                }
+            }
+
+            // 4. 展示弹窗
+            popup.show()
+        }
+
+        // 添加闹钟
+        binding.add.setOnClickListener {
+            val intent = Intent(requireContext(), AddAlarmActivity::class.java)
+            startActivity(intent)
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -73,6 +105,10 @@ class AlarmFragment : Fragment() {
 
             }
         }
+    }
+
+    private fun startAutoStartActivity() {
+        PermissionUtils.openHonorPowerDetail(requireContext())
     }
 
     private fun showSmartToast(message: String) {

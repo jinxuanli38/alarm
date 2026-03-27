@@ -3,6 +3,8 @@ package com.example.alarm_jinxuan.utils
 import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -13,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +31,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -38,6 +42,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
@@ -182,7 +187,17 @@ object SharedClockComponents {
             val center = size.center
 
             drawClockTicks(radius, center, metrics, textPaint)
-            drawHands(center, hourAngle, minuteAngle, secondAngle, hourHandPath, minuteHandPath, metrics, radius, density)
+            drawHands(
+                center,
+                hourAngle,
+                minuteAngle,
+                secondAngle,
+                hourHandPath,
+                minuteHandPath,
+                metrics,
+                radius,
+                density
+            )
         }
     }
 
@@ -249,7 +264,11 @@ object SharedClockComponents {
     /**
      * 创建时针路径
      */
-    private fun createHourHandPath(clockRadius: Float, metrics: ClockMetrics, density: Density): Path {
+    private fun createHourHandPath(
+        clockRadius: Float,
+        metrics: ClockMetrics,
+        density: Density
+    ): Path {
         return Path().apply {
             fillType = PathFillType.EvenOdd
 
@@ -300,7 +319,11 @@ object SharedClockComponents {
     /**
      * 创建分针路径
      */
-    private fun createMinuteHandPath(clockRadius: Float, metrics: ClockMetrics, density: Density): Path {
+    private fun createMinuteHandPath(
+        clockRadius: Float,
+        metrics: ClockMetrics,
+        density: Density
+    ): Path {
         return Path().apply {
             fillType = PathFillType.EvenOdd
 
@@ -499,6 +522,122 @@ object SharedClockComponents {
             center = center,
             style = Stroke(width = metrics.ringStroke)
         )
+    }
+
+    @Composable
+    fun TimerRenderScreen(
+        total: Long,
+        remaining: Long,
+        isRunning: Boolean,
+        formatTime: (Long) -> String
+    ) {
+        // 计算目标进度
+        val targetProgress = remaining.toFloat() / total.toFloat()
+
+        // 换成秒数
+        val remainSecond = remaining / 1_000_000_000L
+        val totalSecond = total / 1_000_000_000L
+
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            // 绘制圆环
+            CircularCountdownView(
+                modifier = Modifier.size(280.dp),
+                progress = targetProgress.coerceIn(0f, 1f),
+                strokeWidth = 10.dp
+            )
+
+            // 中间文字显示
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = formatTime(remainSecond) ,
+                    style = TextStyle(
+                        color = Color.Gray,
+                        fontSize = 48.sp,
+                        fontFamily = FontFamily.Monospace
+                    )
+                )
+                var text = (totalSecond / 60).toString()
+                text = if (text == "0") {
+                    "不足一分钟"
+                } else {
+                    "共${text}分钟"
+                }
+
+                // 下方辅助文字
+                Text(
+                    text = text,
+                    color = Color.Black,
+                    fontSize = 14.sp
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun CircularCountdownView(
+        modifier: Modifier = Modifier,
+        progress: Float, // 当前进度 (0.0 到 1.0)
+        strokeWidth: Dp, // 圆环的粗细
+        trackColor: Color = Color.LightGray, // 底部背景轨道的颜色（深灰）
+        progressColor: Color = Color(0xFF007AFF)  // 进度条的颜色（蓝色）
+    ) {
+        Canvas(modifier = modifier.fillMaxSize()) {
+            val width = size.width
+            val height = size.height
+            val center = Offset(width / 2f, height / 2f)
+
+            // 计算半径（减去一半的粗细，防止圆环超出 Canvas 边界）
+            val radius = (width.coerceAtMost(height) - strokeWidth.toPx()) / 2f
+
+            // 1. 绘制背景圆环（底色轨道）
+            drawCircle(
+                color = trackColor,
+                radius = radius,
+                center = center,
+                style = Stroke(width = strokeWidth.toPx())
+            )
+
+            // 2. 绘制进度圆弧
+            // startAngle 为 -90f，表示从正上方（12点钟方向）开始绘制
+            val sweepAngle = progress * 360f
+            drawArc(
+                color = progressColor,
+                startAngle = -90f,
+                sweepAngle = sweepAngle,
+                useCenter = false,
+                style = Stroke(
+                    width = strokeWidth.toPx(),
+                    cap = StrokeCap.Round // 设置圆角端点
+                ),
+                topLeft = Offset(center.x - radius, center.y - radius),
+                size = Size(radius * 2, radius * 2)
+            )
+
+            // 3. 绘制进度头部的小圆点（发光效果点）
+            // 如果进度为 0，就不画点
+            if (progress > 0) {
+                // 计算小圆点所在的弧度 (减去 90度是以对齐起始位置)
+                val angleInRad = Math.toRadians((sweepAngle - 90).toDouble())
+
+                // 计算小圆点的 XY 坐标
+                val dotX = center.x + radius * cos(angleInRad).toFloat()
+                val dotY = center.y + radius * sin(angleInRad).toFloat()
+
+                // 画圆点
+                drawCircle(
+                    color = progressColor,
+                    radius = (strokeWidth.toPx() / 1.5f), // 圆点比轨道稍细或相等
+                    center = Offset(dotX, dotY)
+                )
+
+                // 如果想要图片里那种“发光”感，可以再画一个带透明度的外圈圆
+                drawCircle(
+                    color = progressColor.copy(alpha = 0.3f),
+                    radius = strokeWidth.toPx() * 1.2f, // 外圈大一点
+                    center = Offset(dotX, dotY)
+                )
+            }
+        }
     }
 
     private fun Dp.toPx(density: Density) = with(density) { this@toPx.toPx() }

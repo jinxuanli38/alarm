@@ -6,9 +6,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:allowBackup="true"
@@ -21,10 +21,11 @@
         android:theme="@style/Theme.Alarmjinxuan">
         <activity
             android:name=".view.ring.RingActivity"
-            android:showOnLockScreen="true"
-            android:turnScreenOn="true"
+            android:directBootAware="true"
+            android:exported="false"
             android:launchMode="singleInstance"
-            android:exported="false" />
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true" />
         <activity
             android:name=".view.vibration.VibrationActivity"
             android:exported="false" />
@@ -48,24 +49,50 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".service.TimerService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"/>
+
         <service
             android:name=".service.AlarmService"
+            android:directBootAware="true"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
-        <receiver android:name=".receiver.AlarmReceiver" android:exported="true" android:enabled="true" >
+
+        <service
+            android:name=".service.StopWatchService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <receiver android:name=".receiver.TimerReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="ACTION_START" />
+                <action android:name="ACTION_PAUSE" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".receiver.AlarmReceiver"
+            android:directBootAware="true"
+            android:enabled="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="ACTION_ALARM_TRIGGER" />
                 <action android:name="ACTION_DISMISS" />
                 <action android:name="ACTION_SNOOZE" />
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
         <receiver
             android:name=".receiver.BootReceiver"
+            android:directBootAware="true"
             android:enabled="true"
-            android:exported="true"
-            android:directBootAware="true">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />

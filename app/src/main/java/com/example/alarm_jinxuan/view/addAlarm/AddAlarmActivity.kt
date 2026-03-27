@@ -29,6 +29,7 @@ import com.example.alarm_jinxuan.model.AlarmEntity
 import com.example.alarm_jinxuan.model.DurationOption
 import com.example.alarm_jinxuan.model.RepeatDay
 import com.example.alarm_jinxuan.utils.AlarmManagerUtils
+import com.example.alarm_jinxuan.utils.PermissionUtils
 import com.example.alarm_jinxuan.utils.StringUtils
 import com.example.alarm_jinxuan.view.alarmClockRing.AlarmClockRingActivity
 import kotlinx.coroutines.launch
@@ -583,6 +584,26 @@ class AddAlarmActivity : AppCompatActivity() {
     }
 
     private fun saveAlarm(alarm: AlarmEntity) {
+        // 先检查是否有必要的权限
+        if (!PermissionUtils.hasAllPermissions(this)) {
+            // 没有权限，引导用户去设置
+            PermissionUtils.checkAndRequestPermissions(this) { allGranted ->
+                if (allGranted) {
+                    // 用户授权后，重新保存
+                    saveAlarm(alarm)
+                } else {
+                    // 用户未授权，但仍尝试保存（数据会保存，但闹钟可能无法准时触发）
+                    doSaveAlarm(alarm)
+                }
+            }
+            return
+        }
+
+        // 权限正常，直接保存
+        doSaveAlarm(alarm)
+    }
+
+    private fun doSaveAlarm(alarm: AlarmEntity) {
         // 存储到数据库
         lifecycleScope.launch {
             val rowId = viewModel.insertAlarm(alarm)

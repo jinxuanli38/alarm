@@ -1,6 +1,8 @@
 package com.example.alarm_jinxuan.repository
 
+import android.app.NotificationManager
 import android.content.Context
+import android.util.Log
 import com.example.alarm_jinxuan.dao.AlarmDao
 import com.example.alarm_jinxuan.dao.AppDatabase
 import com.example.alarm_jinxuan.model.AlarmEntity
@@ -24,13 +26,31 @@ object AlarmRepository {
     /**
      * 关闭闹钟时修改闹钟状态（仅在不重复时关闭）
       */
-    fun dismissAlarm(alarm: AlarmEntity) {
-        // 同时也要修改闹钟的重复响应次数以及相应的时间戳
-        val computeSnoozeCount = alarm.snoozeCount
+    fun dismissAlarm(alarm: AlarmEntity,context: Context) {
+        // 获得下一次闹钟响铃的时间戳
         val nextTriggerTime = AlarmManagerUtils.calculateNextTriggerTime(alarm)
 
         CoroutineScope(Dispatchers.IO).launch {
-            alarmDao?.updateEnabledStatus(alarm.id,false,nextTriggerTime,computeSnoozeCount)
+            // 关闭闹钟通知（服务已经在receiver和service里面关闭）
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.cancel(alarm.id)
+            // 修改数据库
+            // 在调用这个方法的地方打印
+            Log.e("关闭闹钟", "准备写入时间戳: $nextTriggerTime")
+            alarmDao?.updateEnabledStatus(alarm.id,false,nextTriggerTime)
+            // 同时不要忘记去修改闹钟状态
+            AlarmManagerUtils.cancelAlarm(context,alarm.id)
+        }
+    }
+
+    /**
+     * 只是修改闹钟的时间戳（不改变闹钟状态，主要是闹钟是重复的）
+     */
+    fun updateAlarmNextTriggerTime(alarm: AlarmEntity,nextTriggerTime: Long) {
+        CoroutineScope(Dispatchers.IO).launch {
+            // 在调用这个方法的地方打印
+            Log.e("修改闹钟时间戳", "准备写入时间戳: $nextTriggerTime")
+            alarmDao?.updateEnabledStatus(alarm.id,true,nextTriggerTime)
         }
     }
 
@@ -44,11 +64,9 @@ object AlarmRepository {
     }
 
     /**
-     * 根据 ID 查询闹钟（同步方法，用于 Service 中）
+     * 查询所有已经开启的闹铃（开机自启动所需要）
      */
-    fun getAlarmById(alarmId: Int): AlarmEntity? {
-        return kotlinx.coroutines.runBlocking {
-            alarmDao?.getAlarmById(alarmId)
-        }
+    suspend fun getAllAlarms(): List<AlarmEntity>? {
+        return alarmDao?.getAllEnabledAlarms()
     }
 }

@@ -1,14 +1,179 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:paddingTop="40dp"
     tools:context=".view.timer.TimerFragment">
 
     <!-- TODO: Update blank fragment layout -->
     <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:id="@+id/title"
+        android:layout_width="80dp"
+        android:layout_height="25dp"
+        android:layout_marginStart="40dp"
+        android:text="@string/timer"
+        android:textColor="@color/black"
+        android:textSize="20sp"
 
-</FrameLayout>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/compose_view"
+        android:layout_width="320dp"
+        android:layout_height="320dp"
+        android:layout_marginTop="20dp"
+
+        android:visibility="gone"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/title" />
+
+    <com.aigestudio.wheelpicker.WheelPicker
+        android:id="@+id/wheel_hour"
+        android:layout_width="100dp"
+        android:layout_height="250dp"
+
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="40dp"
+
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/title"
+
+        app:wheel_curved="true"
+        app:wheel_indicator="false"
+        app:wheel_indicator_color="@color/shallow_gray"
+
+        app:wheel_item_text_color="@color/light_gray"
+        app:wheel_item_text_size="30sp"
+
+        app:wheel_selected_item_text_color="@color/shallow_blue"
+        app:wheel_visible_item_count="5" />
+
+    <TextView
+        android:id="@+id/tv_colon1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/colon"
+        android:textColor="@color/shallow_blue"
+        android:textSize="24sp"
+        android:textStyle="bold"
+
+        app:layout_constraintBottom_toBottomOf="@+id/wheel_hour"
+        app:layout_constraintEnd_toStartOf="@+id/wheel_minute"
+        app:layout_constraintStart_toEndOf="@+id/wheel_hour"
+        app:layout_constraintTop_toTopOf="@+id/wheel_hour" />
+
+    <com.aigestudio.wheelpicker.WheelPicker
+        android:id="@+id/wheel_minute"
+        android:layout_width="100dp"
+        android:layout_height="250dp"
+
+        app:layout_constraintEnd_toStartOf="@+id/wheel_second"
+        app:layout_constraintStart_toEndOf="@+id/wheel_hour"
+        app:layout_constraintTop_toTopOf="@+id/wheel_hour"
+
+        app:wheel_curved="true"
+        app:wheel_cyclic="true"
+        app:wheel_indicator="false"
+
+        app:wheel_indicator_color="@color/shallow_gray"
+        app:wheel_item_text_color="@color/light_gray"
+
+        app:wheel_item_text_size="30sp"
+        app:wheel_selected_item_text_color="@color/shallow_blue"
+        app:wheel_visible_item_count="5" />
+
+    <TextView
+        android:id="@+id/tv_colon2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/colon"
+        android:textColor="@color/shallow_blue"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/wheel_hour"
+        app:layout_constraintEnd_toStartOf="@+id/wheel_second"
+        app:layout_constraintStart_toEndOf="@+id/wheel_minute"
+        app:layout_constraintTop_toTopOf="@+id/wheel_hour" />
+
+    <com.aigestudio.wheelpicker.WheelPicker
+        android:id="@+id/wheel_second"
+        android:layout_width="100dp"
+        android:layout_height="250dp"
+
+        android:layout_marginEnd="20dp"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/wheel_hour"
+        app:wheel_curved="true"
+
+        app:wheel_cyclic="true"
+        app:wheel_indicator="false"
+        app:wheel_indicator_color="@color/shallow_gray"
+
+        app:wheel_item_text_color="@color/light_gray"
+        app:wheel_item_text_size="30sp"
+
+        app:wheel_selected_item_text_color="@color/shallow_blue"
+        app:wheel_visible_item_count="5" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/add"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:src="@drawable/ic_begin"
+        android:contentDescription="开始"
+        app:borderWidth="0dp"
+
+        android:backgroundTint="@color/white"
+        android:background="@color/white"
+        android:layout_marginBottom="20dp"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btn_left_timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:src="@drawable/ic_reset"
+        android:layout_marginBottom="20dp"
+        app:borderWidth="0dp"
+
+        android:backgroundTint="@color/white"
+        android:background="@color/white"
+        android:contentDescription="重置"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+
+        android:visibility="gone"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btn_right_timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:src="@drawable/ic_pause"
+        android:layout_marginBottom="20dp"
+        app:borderWidth="0dp"
+
+        android:backgroundTint="@color/white"
+        android:background="@color/white"
+        android:contentDescription="开始"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+
+        android:visibility="gone"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

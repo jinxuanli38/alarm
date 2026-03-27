@@ -1,18 +1,25 @@
 package com.example.alarm_jinxuan.utils
 
+import android.annotation.SuppressLint
 import android.app.AlarmManager
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import com.example.alarm_jinxuan.model.AlarmEntity
 import com.example.alarm_jinxuan.receiver.AlarmReceiver
+import com.example.alarm_jinxuan.repository.AlarmRepository
 import java.util.Calendar
 
 object AlarmManagerUtils {
+    const val ALARM_CHANNEL_ID = "ALARM_channelId"
+
     /**
      * 设置闹钟管理
      */
+    @SuppressLint("ScheduleExactAlarm")
     fun setAlarm(context: Context, alarm: AlarmEntity, timeInMills: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
@@ -22,11 +29,13 @@ object AlarmManagerUtils {
         }
 
         // PendingIntent 是交给系统托管的 Intent
+        // 使用 FLAG_UPDATE_CURRENT 确保可以更新现有的 PendingIntent
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             alarm.id,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or
+                    PendingIntent.FLAG_IMMUTABLE
         )
 
         // 设置精准闹钟 (setExactAndAllowWhileIdle 保证省电模式也准时)
@@ -117,22 +126,30 @@ object AlarmManagerUtils {
     }
 
     /**
-     * 对于小睡模式后的时间计算
+     * 稍后提醒模式
      */
-    fun calculateNextSnoozeTime(alarm: AlarmEntity): Calendar {
-        val calendar = Calendar.getInstance()
+    fun snoozeAlarm(context: Context, alarm: AlarmEntity) {
+        // 先停止振动和铃声
+        MediaUtils.stop(context)
+        VibrationUtils.stop(context)
+        // 这里的稍后提醒没有任何的次数限制，只要用户愿意可以一直稍后提醒
+        alarm.computeSnoozeCount--
 
-        val diff = alarm.snoozeCount - alarm.computeSnoozeCount
-        // 先设定到当前的这个闹钟时间点
-        calendar.set(Calendar.HOUR_OF_DAY, alarm.hour24)
-        calendar.set(Calendar.MINUTE, alarm.minute)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
+        val triggerTime = getSnoozeTriggerTime(alarm)
+        alarm.nextTriggerTime = triggerTime
+        // 修改数据库更改下一次响铃的时间（这里修改了响应更换次数，后续关闭闹钟需要修改回来）
+        AlarmRepository.updateAlarm(alarm)
+        Log.e("当前的闹钟数据",alarm.toString())
+        // 只需要再设置一个再响间隔的闹铃即可
+        setAlarm(context,alarm,triggerTime)
 
-        // 添加时间间隔
-        calendar.add(Calendar.MINUTE, alarm.snoozeInterval * (diff))
+        // 设置稍后提醒的闹钟日志
+        val dismissPI = AlarmNotificationUtils.getBroadcastIntent(context, alarm, "ACTION_DISMISS", 1000)
+        val snoozeBuilder = AlarmNotificationUtils.getSnoozeBuilder(context, alarm, dismissPI, ALARM_CHANNEL_ID)
 
-        return calendar
+        // 获取 NotificationManager 并更新通知
+        val notificationManager = context.getSystemService(NotificationManager::class.java)
+        notificationManager.notify(alarm.id, snoozeBuilder.build())
     }
 
     /**

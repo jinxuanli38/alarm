@@ -73,4 +73,6 @@ dependencies {
     ksp(libs.glide.ksp)
     ksp(libs.room.compiler)
     implementation(libs.wheelpicker.aige)
+    implementation(libs.androidx.media)
+    implementation(libs.androidx.lifecycle.service)
 }

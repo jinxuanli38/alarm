@@ -1,6 +1,7 @@
 package com.example.alarm_jinxuan.dao
 
 import android.content.Context
+import android.os.Build
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -22,9 +23,16 @@ abstract class AppDatabase : RoomDatabase() {
         private var INSTANCE: AppDatabase? = null
 
         fun getDatabase(context: Context): AppDatabase {
+            // 获取设备保护存储上下文。
+            val deviceContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                context.createDeviceProtectedStorageContext()
+            } else {
+                context
+            }
+
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
-                    context.applicationContext,
+                    deviceContext,
                     AppDatabase::class.java,
                     "stopwatch_database"
                 ).build()

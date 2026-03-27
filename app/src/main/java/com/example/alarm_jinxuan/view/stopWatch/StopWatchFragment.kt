@@ -1,12 +1,15 @@
 package com.example.alarm_jinxuan.view.stopWatch
 
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.OvershootInterpolator
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,7 +38,11 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.alarm_jinxuan.R
 import com.example.alarm_jinxuan.databinding.FragmentStopWatchBinding
+import com.example.alarm_jinxuan.service.StopWatchService
+import com.example.alarm_jinxuan.utils.GlideUtil
+import com.example.alarm_jinxuan.utils.StopWatchManager
 import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
@@ -81,14 +88,91 @@ class StopWatchFragment : Fragment() {
             adapter = lapAdapter
             setHasFixedSize(true)
         }
+        // 启动秒表
+        binding.add.setOnClickListener {
+            // 启动服务，让 Service 通过命令来触发 ViewModel 的逻辑
+            val intent = Intent(requireContext(), StopWatchService::class.java).apply {
+                action = "ACTION_START"
+            }
+            // 启动前台服务
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                requireContext().startForegroundService(intent)
+            } else {
+                requireContext().startService(intent)
+            }
+            // 分裂动画
+            startSplitAnimation()
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.laps.collect { newList ->
-                    lapAdapter.submitList(newList) {
-                        binding.laps.scrollToPosition(0)
+                launch {
+                    viewModel.laps.collect { newList ->
+                        lapAdapter.submitList(newList) {
+                            binding.laps.scrollToPosition(0)
+                        }
                     }
                 }
+
+                launch {
+                    val intent = Intent(requireContext(), StopWatchService::class.java)
+                    // 监听flow更改按钮
+                    viewModel.isRunning.collect { value ->
+                        if (value) {
+                            GlideUtil.loadImage(requireContext(),R.drawable.ic_stop_watch,binding.btnLeftStopWatch)
+                            GlideUtil.loadImage(requireContext(),R.drawable.ic_pause,binding.btnRightStopWatch)
+
+                            // 快记功能
+                            binding.btnLeftStopWatch.setOnClickListener {
+                                // 添加快记数据列表
+                                viewModel.addLap()
+                                // 将间隔时间清零重来
+                                viewModel.intervalReset()
+                                // 显示间隔时间
+                                viewModel.firstInterval.value = true
+                            }
+                            // 暂停功能
+                            binding.btnRightStopWatch.setOnClickListener {
+                                val intent = Intent(requireContext(), StopWatchService::class.java).apply {
+                                    action = "ACTION_TOGGLE"
+                                }
+                                requireContext().startService(intent)
+                            }
+                        } else {
+                            GlideUtil.loadImage(requireContext(),R.drawable.ic_reopen,binding.btnLeftStopWatch)
+                            GlideUtil.loadImage(requireContext(),R.drawable.ic_begin,binding.btnRightStopWatch)
+                            binding.btnLeftStopWatch.setOnClickListener {
+                                val intent = Intent(requireContext(), StopWatchService::class.java).apply {
+                                    action = "ACTION_RESET"
+                                }
+                                requireContext().startService(intent)
+                                // 重置时间
+                                viewModel.reset()
+                                // 删除所有快记时间
+                                viewModel.deleteLapRecord()
+                                // 将间隔时间清零重来
+                                viewModel.intervalReset()
+                                // 间隔时间不显示
+                                viewModel.firstInterval.value = false
+                                // 同时执行合并
+                                startMergeAnimation()
+                            }
+                            // 启动功能
+                            binding.btnRightStopWatch.setOnClickListener {
+                                val intent = Intent(requireContext(), StopWatchService::class.java).apply {
+                                    action = "ACTION_START"
+                                    putExtra("BASE_TIME", viewModel.getNotificationBaseTime())
+                                }
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    requireContext().startForegroundService(intent)
+                                } else {
+                                    requireContext().startService(intent)
+                                }
+                            }
+                        }
+                    }
+                }
+                
             }
         }
 
@@ -101,12 +185,91 @@ class StopWatchFragment : Fragment() {
         }
     }
 
+    /**
+     * 分裂动画
+     */
+    private fun startSplitAnimation() {
+        val distance = 200f // 分裂出去的距离（像素或转为dp）
+        val duration = 400L // 动画时长
+
+        // add按钮缩小变透明
+        binding.add.animate()
+            .scaleX(0f)
+            .scaleY(0f)
+            .alpha(0f)
+            .setDuration(duration)
+            .withEndAction { binding.add.visibility = View.GONE }
+            .start()
+
+        // 2. 左侧按钮：先显示，再向左平移
+        binding.btnLeftStopWatch.apply {
+            visibility = View.VISIBLE
+            alpha = 0f
+            scaleX = 0f
+            scaleY = 0f
+            animate()
+                .translationX(-distance) // 向左移动
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setInterpolator(OvershootInterpolator()) // 增加回弹效果，更有张力
+                .setDuration(duration)
+                .start()
+        }
+
+        // 3. 右侧按钮：先显示，再向右平移
+        binding.btnRightStopWatch.apply {
+            visibility = View.VISIBLE
+            alpha = 0f
+            scaleX = 0f
+            scaleY = 0f
+            animate()
+                .translationX(distance) // 向右移动
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setInterpolator(OvershootInterpolator())
+                .setDuration(duration)
+                .start()
+        }
+    }
+
+    /**
+     * 缩回动画
+     */
+    private fun startMergeAnimation() {
+        val duration = 400L
+
+        // 1. 中间按钮：显现并放大
+        binding.add.apply {
+            visibility = View.VISIBLE
+            animate()
+                .scaleX(1f)
+                .scaleY(1f)
+                .alpha(1f)
+                .setDuration(duration)
+                .start()
+        }
+
+        // 2. 左右按钮：缩回中间并消失
+        listOf(binding.btnLeftStopWatch, binding.btnRightStopWatch).forEach { btn ->
+            btn.animate()
+                .translationX(0f) // 回到坐标原点（即父容器中心）
+                .scaleX(0f)
+                .scaleY(0f)
+                .alpha(0f)
+                .setDuration(duration)
+                .withEndAction { btn.visibility = View.GONE }
+                .start()
+        }
+    }
+
     @Composable
     private fun stopWatchScreen() {
         // 其实就是填满整个盒子以及居中排列
         Box(
-            modifier = Modifier.Companion.fillMaxSize(),
-            contentAlignment = Alignment.Companion.Center
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
             stopwatchDial()
         }
@@ -122,7 +285,7 @@ class StopWatchFragment : Fragment() {
         LaunchedEffect(isRunning) {
             if (isRunning) {
                 var lastFrameTime = System.nanoTime()
-                while (isRunning) {
+                while (true) {
                     withFrameNanos { frameTimeNanos ->
                         val diff = frameTimeNanos - lastFrameTime
                         viewModel.addNanos(diff)
@@ -166,7 +329,7 @@ class StopWatchFragment : Fragment() {
             }
         }
 
-        Canvas(modifier = Modifier.Companion.size(300.dp)) {
+        Canvas(modifier = Modifier.size(300.dp)) {
             val center = size.center
             val radius = size.width / 2
 
@@ -183,7 +346,7 @@ class StopWatchFragment : Fragment() {
 
                 rotate(degrees = angle, pivot = center) {
                     drawLine(
-                        color = if (isBigMajor) androidx.compose.ui.graphics.Color.Companion.Black else androidx.compose.ui.graphics.Color.Companion.LightGray,
+                        color = if (isBigMajor) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.LightGray,
                         start = Offset(center.x, center.y - radius + metrics.offsetTop),
                         end = Offset(center.x, center.y - radius + metrics.offsetTop + lineLen),
                         strokeWidth = metrics.strokeW
@@ -207,7 +370,7 @@ class StopWatchFragment : Fragment() {
                     start = Offset(center.x, center.y - metrics.needleGap),
                     end = Offset(center.x, center.y - radius + 10.dp.toPx()),
                     strokeWidth = metrics.needleWidth,
-                    cap = StrokeCap.Companion.Round
+                    cap = StrokeCap.Round
                 )
                 // 针尾
                 drawLine(
@@ -215,7 +378,7 @@ class StopWatchFragment : Fragment() {
                     start = Offset(center.x, center.y + metrics.needleGap),
                     end = Offset(center.x, center.y + metrics.needleTail),
                     strokeWidth = metrics.needleWidth,
-                    cap = StrokeCap.Companion.Round
+                    cap = StrokeCap.Round
                 )
             }
 

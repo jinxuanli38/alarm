@@ -1,5 +1,6 @@
 package com.example.alarm_jinxuan.view.worldClock
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.fragment.app.Fragment
 import com.example.alarm_jinxuan.databinding.FragmentWorldClockBinding
 import com.example.alarm_jinxuan.utils.SharedClockComponents
+import com.example.alarm_jinxuan.view.addAlarm.AddAlarmActivity
+import com.example.alarm_jinxuan.view.addCity.AddCityActivity
 
 class WorldClockFragment : Fragment() {
     private var _binding: FragmentWorldClockBinding? = null
@@ -34,6 +37,12 @@ class WorldClockFragment : Fragment() {
             MaterialTheme {
                 worldClockScreen()
             }
+        }
+
+        // 添加世界时间
+        binding.add.setOnClickListener {
+            val intent = Intent(requireContext(), AddCityActivity::class.java)
+            startActivity(intent)
         }
     }
 

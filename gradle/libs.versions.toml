@@ -19,6 +19,7 @@ ksp = "2.0.21-1.0.25"
 appcompat = "1.7.1"
 activityVersion = "1.12.4"
 wheelpicker = "1.2.0"
+media = "1.7.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,6 +49,8 @@ room-compiler = { group = "androidx.room", name = "room-compiler", version.ref =
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activityVersion" }
 wheelpicker-aige = { group = "dev.aige.pub", name = "WheelPicker", version.ref = "wheelpicker" }
+androidx-media = { group = "androidx.media", name = "media", version.ref = "media" }
+androidx-lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycle" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

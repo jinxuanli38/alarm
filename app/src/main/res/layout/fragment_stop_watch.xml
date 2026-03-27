@@ -4,7 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:padding="40dp"
+    android:paddingTop="40dp"
+    android:paddingStart="40dp"
+    android:paddingEnd="40dp"
     tools:context=".view.stopWatch.StopWatchFragment">
 
     <TextView
@@ -73,5 +75,57 @@
         app:layout_constraintTop_toBottomOf="@id/break_point"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/add"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:src="@drawable/ic_begin"
+        android:layout_marginBottom="20dp"
+        app:borderWidth="0dp"
+
+        android:backgroundTint="@color/white"
+        android:background="@color/white"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btn_left_stop_watch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:src="@drawable/ic_stop_watch"
+        android:layout_marginBottom="20dp"
+        app:borderWidth="0dp"
+
+        android:backgroundTint="@color/white"
+        android:background="@color/white"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+
+        android:visibility="gone"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btn_right_stop_watch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:src="@drawable/ic_reopen"
+        android:layout_marginBottom="20dp"
+        app:borderWidth="0dp"
+
+        android:backgroundTint="@color/white"
+        android:background="@color/white"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+
+        android:visibility="gone"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

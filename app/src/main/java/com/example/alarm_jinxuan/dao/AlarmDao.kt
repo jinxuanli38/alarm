@@ -1,5 +1,6 @@
 package com.example.alarm_jinxuan.dao
 
+import android.util.Log
 import androidx.room.*
 import com.example.alarm_jinxuan.model.AlarmEntity
 import kotlinx.coroutines.flow.Flow
@@ -11,12 +12,11 @@ interface AlarmDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAlarm(alarm: AlarmEntity): Long
 
-    @Query("UPDATE alarms SET isEnabled = :enabled, nextTriggerTime = :nextTriggerTime, computeSnoozeCount = :computeSnoozeCount WHERE id = :alarmId")
+    @Query("UPDATE alarms SET isEnabled = :enabled, nextTriggerTime = :nextTriggerTime, computeSnoozeCount = snoozeCount WHERE id = :alarmId")
     suspend fun updateEnabledStatus(
         alarmId: Int,
         enabled: Boolean,
         nextTriggerTime: Long,
-        computeSnoozeCount: Int
     )
 
     // 只修改闹钟的开关状态
@@ -34,6 +34,10 @@ interface AlarmDao {
     // 只查询已开启的闹钟（以下一次响铃时间为主）
     @Query("SELECT * FROM alarms WHERE isEnabled = 1 ORDER BY nextTriggerTime ASC")
     fun getEnabledAlarms(): Flow<List<AlarmEntity>>
+
+    // 只查询已开启的闹钟（以下一次响铃时间为主），但需要明确不是flow流
+    @Query("SELECT * FROM alarms WHERE isEnabled = 1 ORDER BY nextTriggerTime ASC")
+    fun getAllEnabledAlarms(): List<AlarmEntity>
 
     // 根据 ID 查询单个闹钟（用于编辑页面回显）
     @Query("SELECT * FROM alarms WHERE id = :alarmId")

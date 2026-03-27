@@ -1,6 +1,6 @@
 package com.example.alarm_jinxuan.view.ring
 
-import android.app.KeyguardManager
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -13,6 +13,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.alarm_jinxuan.databinding.ActivityRingBinding
 import com.example.alarm_jinxuan.model.AlarmEntity
+import com.example.alarm_jinxuan.service.AlarmService
+import com.example.alarm_jinxuan.utils.AlarmManagerUtils
 import com.example.alarm_jinxuan.utils.MediaUtils
 import com.example.alarm_jinxuan.utils.VibrationUtils
 
@@ -42,7 +44,7 @@ class RingActivity : AppCompatActivity() {
         fillAlarmData()
 
         // 设置交互
-        setupListeners()
+        setupListeners(alarm)
     }
 
     /**
@@ -90,12 +92,19 @@ class RingActivity : AppCompatActivity() {
         binding.tvTime.text = "${alarm.hour}:${alarm.minute}"
     }
 
-    private fun setupListeners() {
-        // 图中那个椭圆按钮：“10 分钟后提醒”
+    private fun setupListeners(alarm: AlarmEntity) {
+        val intent = Intent(this, AlarmService::class.java)
+
+        binding.btnSnooze.text = "${alarm.snoozeInterval} 分钟后提醒"
+
         binding.btnSnooze.setOnClickListener {
-            // 实现小睡逻辑：先关掉当前的，定一个10分钟后的 AlarmManager 任务
-            Toast.makeText(this, "闹钟将在 10 分钟后再次响铃", Toast.LENGTH_SHORT).show()
-            MediaUtils.stop(this)
+            Toast.makeText(this, "闹钟将在 ${alarm.snoozeInterval} 分钟后再次响铃", Toast.LENGTH_SHORT).show()
+            // 先停止闹钟响铃
+            this.stopService(intent)
+            // 实现小睡模式
+            AlarmManagerUtils.snoozeAlarm(this,alarm)
+            // 退出页面
+            finish()
         }
 
         binding.seekbarDismiss.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -106,8 +115,7 @@ class RingActivity : AppCompatActivity() {
                 // 如果用户松手时，滑块滑到了 80% 以上，就认为是要关闭
                 if (seekBar != null && seekBar.progress > 80) {
                     // 关闭铃声的同时也要关闭振动
-                    MediaUtils.stop(this@RingActivity)
-                    VibrationUtils.stop(this@RingActivity)
+                    this@RingActivity.stopService(intent)
                     // 同时销毁页面
                     finish()
                 } else {

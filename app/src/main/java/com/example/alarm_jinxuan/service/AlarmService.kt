@@ -1,8 +1,11 @@
 package com.example.alarm_jinxuan.service
 
+import android.app.NotificationManager
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -18,12 +21,36 @@ import com.example.alarm_jinxuan.utils.MediaUtils
 import com.example.alarm_jinxuan.utils.VibrationUtils
 
 class AlarmService : Service() {
+
+    val channelId: String = "ALARM_channelId"
+
+    // 存储当前响铃的闹钟
+    private var currentAlarm: AlarmEntity? = null
+
+    // 处理灭屏逻辑
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                // 如果当前闹钟实例不为空才会执行
+                currentAlarm?.let {
+                    handleScreenOffDuringAlarm(it)
+                }
+            }
+        }
+    }
+
     // 主要处理用户未响应逻辑（睡着模式）
     private val autoDismissHandler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             val alarm = msg.obj as AlarmEntity
             autoHandleNoResponse(alarm)
         }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        val intentFilter = IntentFilter(Intent.ACTION_SCREEN_OFF)
+        registerReceiver(screenReceiver, intentFilter)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -37,16 +64,21 @@ class AlarmService : Service() {
 
         if (alarm == null) {
             Log.e("service出现问题", "接收广播传服务的是空数据")
-            return -1
+            return START_STICKY_COMPATIBILITY
         }
+        currentAlarm = alarm
         // 创建通知通道，为后续调用通知使用
-        AlarmNotificationUtils.createNotificationChannel(this)
+        AlarmNotificationUtils.createNotificationChannel(
+            this, "闹钟", channelId,
+            NotificationManager.IMPORTANCE_HIGH
+        )
         // 显示对应通知
         showNotification(alarm)
         // 开始响铃振动
-        startForegroundResouce(alarm)
+        startForegroundResource(alarm)
 
         handlerSendMeg(alarm)
+        Log.e("service执行成功了", alarm.toString())
 
         return START_STICKY
     }
@@ -64,7 +96,7 @@ class AlarmService : Service() {
         autoDismissHandler.sendMessageDelayed(message, alarm.ringDuration * 60 * 1000L)
     }
 
-    private fun startForegroundResouce(alarm: AlarmEntity) {
+    private fun startForegroundResource(alarm: AlarmEntity) {
         // 先开启振动
         val vibrationOption = AddAlarmClockManager.vibrationList[alarm.vibrationId]
         VibrationUtils.vibrate(this, vibrationOption.pattern, 0)
@@ -77,7 +109,7 @@ class AlarmService : Service() {
 
     private fun showNotification(alarm: AlarmEntity) {
         // 全屏跳转
-        val fullScreenPI = AlarmNotificationUtils.getFullScreenIntent(this,alarm)
+        val fullScreenPI = AlarmNotificationUtils.getFullScreenIntent(this, alarm)
 
         // 关闭闹钟功能
         val dismissPI =
@@ -88,7 +120,14 @@ class AlarmService : Service() {
             AlarmNotificationUtils.getBroadcastIntent(this, alarm, "ACTION_SNOOZE", 2000)
 
         // 构建通知
-        val builder = AlarmNotificationUtils.getNotificationBuilder(this,alarm,fullScreenPI,dismissPI,snoozePI)
+        val builder = AlarmNotificationUtils.getNotificationBuilder(
+            this,
+            alarm,
+            fullScreenPI,
+            dismissPI,
+            snoozePI,
+            channelId
+        )
 
         // 启动前台服务通知
         startForeground(alarm.id, builder.build())
@@ -98,7 +137,10 @@ class AlarmService : Service() {
      * 主要调用重复响铃次数
      */
     private fun autoHandleNoResponse(alarm: AlarmEntity) {
-        Log.e("AlarmService", "自动处理无响应: ${alarm.label}, computeSnoozeCount = ${alarm.computeSnoozeCount}")
+        Log.e(
+            "AlarmService",
+            "自动处理无响应: ${alarm.label}, computeSnoozeCount = ${alarm.computeSnoozeCount}"
+        )
 
         // 手动清理铃声和振动资源（不要调用 onDestroy()）
         MediaUtils.stop(this)
@@ -117,11 +159,13 @@ class AlarmService : Service() {
             AlarmManagerUtils.setAlarm(this, alarm, alarm.nextTriggerTime)
 
             // 更新通知为"稍后提醒"状态
-            val dismissPI = AlarmNotificationUtils.getBroadcastIntent(this, alarm, "ACTION_DISMISS", 1000)
-            val snoozeBuilder = AlarmNotificationUtils.getSnoozeBuilder(this, alarm, dismissPI)
+            val dismissPI =
+                AlarmNotificationUtils.getBroadcastIntent(this, alarm, "ACTION_DISMISS", 1000)
+            val snoozeBuilder =
+                AlarmNotificationUtils.getSnoozeBuilder(this, alarm, dismissPI, channelId)
 
             // 获取 NotificationManager 并更新通知
-            val notificationManager = getSystemService(android.app.NotificationManager::class.java)
+            val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.notify(alarm.id, snoozeBuilder.build())
 
             Log.d("AlarmService", "已设置稍后提醒: ${alarm.snoozeInterval}分钟后")
@@ -129,9 +173,9 @@ class AlarmService : Service() {
             // 重复响铃次数耗尽，关闭闹钟（等待下一次的闹钟响（如果重复的话））
             Log.e("AlarmService", "重复次数耗尽，关闭闹钟")
             if (alarm.repeatText == "不重复") {
-                AlarmRepository.dismissAlarm(alarm)
+                AlarmRepository.dismissAlarm(alarm, this)
             } else {
-                setAlarm(this,alarm)
+                setAlarm(this, alarm)
             }
             // 停止服务
             stopSelf()
@@ -154,6 +198,8 @@ class AlarmService : Service() {
 
         // 同时销毁handler任务（目前有问题，如果当前有两个闹钟都在响，那么一下子就都清除了。）
         autoDismissHandler.removeMessages(0)
+        // 销毁灭屏广播服务
+        unregisterReceiver(screenReceiver)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -163,7 +209,15 @@ class AlarmService : Service() {
      */
     private fun setAlarm(context: Context, alarm: AlarmEntity) {
         // 设置下一次的闹铃
-        AlarmManagerUtils.setAlarm(context,alarm,alarm.nextTriggerTime)
+        AlarmManagerUtils.setAlarm(context, alarm, alarm.nextTriggerTime)
+    }
+
+    /**
+     * 灭屏后的相关逻辑（其实就是执行稍后提醒模式）
+     */
+    private fun handleScreenOffDuringAlarm(alarm: AlarmEntity) {
+        // 添加windowFlag的目的是为了
+        AlarmManagerUtils.snoozeAlarm(this, alarm)
     }
 
 }

@@ -4,12 +4,12 @@ import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.example.alarm_jinxuan.dao.AppDatabase
 import com.example.alarm_jinxuan.model.AlarmEntity
-import com.example.alarm_jinxuan.repository.AlarmRepository
 import com.example.alarm_jinxuan.service.AlarmService
 import com.example.alarm_jinxuan.utils.AlarmManagerUtils
 import com.example.alarm_jinxuan.utils.StringUtils
@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Calendar
 
 class AddAlarmViewModel(application: Application) : AndroidViewModel(application) {
     private val alarmDao = AppDatabase.getDatabase(application).alarm()
@@ -57,7 +56,9 @@ class AddAlarmViewModel(application: Application) : AndroidViewModel(application
     val alarmCountdownFlow = combine(allEnabledAlarms, timeTickerFlow) { alarms, _ ->
         val nextAlarmEntity = alarms.firstOrNull() ?: return@combine "所有闹钟已关闭"
 
+
         val triggerTime = nextAlarmEntity.nextTriggerTime
+        Log.e("flow相关数据",triggerTime.toString())
         val (d,h, m) = AlarmManagerUtils.getRemainingTime(triggerTime)
 
         StringUtils.formatRemainingTime(d,h,m)
@@ -77,7 +78,6 @@ class AddAlarmViewModel(application: Application) : AndroidViewModel(application
      */
     fun updateAlarmEnabled(alarm: AlarmEntity,enabled: Boolean) {
         // 同时也要修改闹钟的重复响应次数以及相应的时间戳
-        val computeSnoozeCount = alarm.snoozeCount
         val nextTriggerTime = AlarmManagerUtils.calculateNextTriggerTime(alarm)
 
         viewModelScope.launch {
@@ -88,7 +88,9 @@ class AddAlarmViewModel(application: Application) : AndroidViewModel(application
             val intent = Intent(application, AlarmService::class.java)
             application.stopService(intent)
 
-            alarmDao.updateEnabledStatus(alarm.id,enabled,nextTriggerTime,computeSnoozeCount)
+            // 在调用这个方法的地方打印
+            Log.e("修改开关状态", "准备写入时间戳: $nextTriggerTime")
+            alarmDao.updateEnabledStatus(alarm.id,enabled,nextTriggerTime)
             // 同时不要忘记去修改闹钟状态
             if (!enabled) {
                 AlarmManagerUtils.cancelAlarm(application,alarm.id)
