@@ -1,10 +1,8 @@
 package com.example.alarm_jinxuan.view.stopWatch
 
-import android.content.Intent
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -40,7 +38,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.alarm_jinxuan.R
 import com.example.alarm_jinxuan.databinding.FragmentStopWatchBinding
-import com.example.alarm_jinxuan.service.StopWatchService
 import com.example.alarm_jinxuan.utils.GlideUtil
 import com.example.alarm_jinxuan.utils.StopWatchManager
 import kotlinx.coroutines.launch
@@ -88,18 +85,10 @@ class StopWatchFragment : Fragment() {
             adapter = lapAdapter
             setHasFixedSize(true)
         }
+
         // 启动秒表
         binding.add.setOnClickListener {
-            // 启动服务，让 Service 通过命令来触发 ViewModel 的逻辑
-            val intent = Intent(requireContext(), StopWatchService::class.java).apply {
-                action = "ACTION_START"
-            }
-            // 启动前台服务
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                requireContext().startForegroundService(intent)
-            } else {
-                requireContext().startService(intent)
-            }
+            viewModel.start()
             // 分裂动画
             startSplitAnimation()
         }
@@ -115,8 +104,7 @@ class StopWatchFragment : Fragment() {
                 }
 
                 launch {
-                    val intent = Intent(requireContext(), StopWatchService::class.java)
-                    // 监听flow更改按钮
+                    // 监听运行状态
                     viewModel.isRunning.collect { value ->
                         if (value) {
                             GlideUtil.loadImage(requireContext(),R.drawable.ic_stop_watch,binding.btnLeftStopWatch)
@@ -133,20 +121,14 @@ class StopWatchFragment : Fragment() {
                             }
                             // 暂停功能
                             binding.btnRightStopWatch.setOnClickListener {
-                                val intent = Intent(requireContext(), StopWatchService::class.java).apply {
-                                    action = "ACTION_TOGGLE"
-                                }
-                                requireContext().startService(intent)
+                                viewModel.stop()
                             }
                         } else {
                             GlideUtil.loadImage(requireContext(),R.drawable.ic_reopen,binding.btnLeftStopWatch)
                             GlideUtil.loadImage(requireContext(),R.drawable.ic_begin,binding.btnRightStopWatch)
+
                             binding.btnLeftStopWatch.setOnClickListener {
-                                val intent = Intent(requireContext(), StopWatchService::class.java).apply {
-                                    action = "ACTION_RESET"
-                                }
-                                requireContext().startService(intent)
-                                // 重置时间
+                                // 重置功能
                                 viewModel.reset()
                                 // 删除所有快记时间
                                 viewModel.deleteLapRecord()
@@ -159,20 +141,11 @@ class StopWatchFragment : Fragment() {
                             }
                             // 启动功能
                             binding.btnRightStopWatch.setOnClickListener {
-                                val intent = Intent(requireContext(), StopWatchService::class.java).apply {
-                                    action = "ACTION_START"
-                                    putExtra("BASE_TIME", viewModel.getNotificationBaseTime())
-                                }
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                    requireContext().startForegroundService(intent)
-                                } else {
-                                    requireContext().startService(intent)
-                                }
+                                viewModel.start()
                             }
                         }
                     }
                 }
-                
             }
         }
 
@@ -321,11 +294,11 @@ class StopWatchFragment : Fragment() {
                 val offsetTop = 10.dp.toPx(density)
 
                 // 指针相关
-                val needleGap = 3.5.dp.toPx(density)
+                val needleGap =3.5.dp.toPx(density)
                 val needleTail = 10.dp.toPx(density)
-                val needleWidth = 1.5.dp.toPx(density)
-                val ringRadius = 3.dp.toPx(density)
-                val ringStroke = 1.5.dp.toPx(density)
+                val needleWidth =1.5.dp.toPx(density)
+                val ringRadius =3.dp.toPx(density)
+                val ringStroke =1.5.dp.toPx(density)
             }
         }
 

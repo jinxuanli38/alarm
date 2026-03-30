@@ -8,8 +8,9 @@ import androidx.room.RoomDatabase
 import com.example.alarm_jinxuan.model.AlarmEntity
 import com.example.alarm_jinxuan.model.LapRecord
 import com.example.alarm_jinxuan.model.StopwatchState
+import com.example.alarm_jinxuan.model.WorldClockEntity
 
-@Database(entities = [LapRecord::class, StopwatchState::class, AlarmEntity::class], version = 1, exportSchema = false)
+@Database(entities = [LapRecord::class, StopwatchState::class, AlarmEntity::class, WorldClockEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun lapDao(): LapDao
@@ -17,6 +18,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun stopWatch(): StopwatchStateDao
 
     abstract fun alarm(): AlarmDao
+
+    abstract fun worldClock(): WorldClockDao
 
     companion object {
         @Volatile

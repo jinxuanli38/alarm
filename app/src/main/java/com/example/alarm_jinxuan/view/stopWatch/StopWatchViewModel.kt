@@ -1,7 +1,6 @@
 package com.example.alarm_jinxuan.view.stopWatch
 
 import android.app.Application
-import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
@@ -9,12 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.alarm_jinxuan.dao.AppDatabase
 import com.example.alarm_jinxuan.model.LapRecord
 import com.example.alarm_jinxuan.model.StopwatchState
-import com.example.alarm_jinxuan.utils.StopWatchManager
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -55,71 +51,14 @@ class StopWatchViewModel(application: Application) : AndroidViewModel(applicatio
         formatNanosToTime(nanos)
     }.asLiveData()
 
-    init {
-        viewModelScope.launch {
-            StopWatchManager.commandFlow.collect { action ->
-                when (action) {
-                    "ACTION_START" -> {
-                        // 直接设置为运行状态（不切换）
-                        _isRunning.value = true
-                        // 更改通知对象信息
-                        var lapText = "暂无计次"
-                        if (laps.value.isNotEmpty()) {
-                            lapText = "计次${laps.value.size + 1}"
-                        }
-                        StopWatchManager.updateNotification(
-                            isRunning.value,
-                            getNotificationBaseTime(),
-                            lapText,
-                            formattedTime.value ?: "00:00"
-                        )
-                    }
-                    "ACTION_TOGGLE" -> {
-                        // 切换状态
-                        _isRunning.value = !_isRunning.value
-                        // 更改通知对象信息
-                        var lapText = "暂无计次"
-                        if (laps.value.isNotEmpty()) {
-                            lapText = "计次${laps.value.size + 1}"
-                        }
-                        StopWatchManager.updateNotification(
-                            isRunning.value,
-                            getNotificationBaseTime(),
-                            lapText,
-                            formattedTime.value ?: "00:00"
-                        )
-                    }
-
-                    "ACTION_LAP" -> {
-                        // 不需要在这里处理，快记操作直接在 Fragment 中执行
-                    }
-
-                    "ACTION_RESET" -> {
-                        reset() // 执行重置逻辑
-                    }
-                }
-            }
-        }
+    // 开始计时
+    fun start() {
+        _isRunning.value = true
     }
 
-    // 秒表暂停开始（供 Fragment 直接调用）
-    fun toggle() {
-        _isRunning.value = !_isRunning.value
-        // 立即更新通知状态
-        val lapText = if (laps.value.isNotEmpty()) "计次${laps.value.size + 1}" else "暂无计次"
-        StopWatchManager.updateNotification(
-            _isRunning.value,
-            getNotificationBaseTime(),
-            lapText,
-            formattedTime.value ?: "00:00:00"
-        )
-    }
-
-    // 通知开始的时间
-    fun getNotificationBaseTime(): Long {
-        // elapsedRealtime() 是系统开机至今的时间（毫秒）
-        // 我们减去当前已经跑过的毫秒数，就能得到通知栏需要的“起点”
-        return SystemClock.elapsedRealtime() - (_elapsedNanos.value / 1_000_000)
+    // 暂停计时
+    fun stop() {
+        _isRunning.value = false
     }
 
     // 开始快记
@@ -134,12 +73,6 @@ class StopWatchViewModel(application: Application) : AndroidViewModel(applicatio
                 durationNanos = diff
             )
 
-            StopWatchManager.updateNotification(
-                _isRunning.value,
-                getNotificationBaseTime(),
-                "计次 ${laps.value.size + 1}",
-                formattedTime.value ?: "00:00:00"
-            )
             lapDao.insert(newLap)
         }
     }
@@ -156,6 +89,7 @@ class StopWatchViewModel(application: Application) : AndroidViewModel(applicatio
     fun reset() {
         _isRunning.value = false
         _elapsedNanos.value = 0L
+        _interval.value = 0L
         // 同时清除数据库时间
         viewModelScope.launch {
             stopWatch.resetState()
@@ -170,13 +104,6 @@ class StopWatchViewModel(application: Application) : AndroidViewModel(applicatio
     fun deleteLapRecord() {
         viewModelScope.launch {
             lapDao.deleteAll()
-        }
-    }
-
-    fun tickerFlow(periodMillis: Long) = flow {
-        while (true) {
-            emit(Unit)
-            delay(periodMillis)
         }
     }
 

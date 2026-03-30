@@ -67,11 +67,7 @@ class AlarmService : Service() {
             return START_STICKY_COMPATIBILITY
         }
         currentAlarm = alarm
-        // 创建通知通道，为后续调用通知使用
-        AlarmNotificationUtils.createNotificationChannel(
-            this, "闹钟", channelId,
-            NotificationManager.IMPORTANCE_HIGH
-        )
+
         // 显示对应通知
         showNotification(alarm)
         // 开始响铃振动
@@ -130,7 +126,7 @@ class AlarmService : Service() {
         )
 
         // 启动前台服务通知
-        startForeground(alarm.id, builder.build())
+        startForeground(119, builder.build())
     }
 
     /**

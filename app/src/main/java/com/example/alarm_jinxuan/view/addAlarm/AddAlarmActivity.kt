@@ -609,11 +609,13 @@ class AddAlarmActivity : AppCompatActivity() {
             val rowId = viewModel.insertAlarm(alarm)
 
             if (rowId != -1L) {
-                val triggerTime = AlarmManagerUtils.calculateNextTriggerTime(alarm)
+                val updatedAlarm = alarm.copy(id = rowId.toInt())
+
+                val triggerTime = AlarmManagerUtils.calculateNextTriggerTime(updatedAlarm)
                 val (d, h, m) = AlarmManagerUtils.getRemainingTime(triggerTime)
 
                 // 同时把闹钟交给系统管理器
-                AlarmManagerUtils.setAlarm(this@AddAlarmActivity, alarm, triggerTime)
+                AlarmManagerUtils.setAlarm(this@AddAlarmActivity, updatedAlarm, triggerTime)
 
                 val time = StringUtils.formatRemainingTime(d, h, m)
                 Toast.makeText(applicationContext, time, Toast.LENGTH_SHORT).show()

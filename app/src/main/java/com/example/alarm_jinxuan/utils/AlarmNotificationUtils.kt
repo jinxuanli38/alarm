@@ -5,9 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.os.Build
-import android.support.v4.media.session.MediaSessionCompat
 import androidx.core.app.NotificationCompat
 import com.example.alarm_jinxuan.MainActivity
 import com.example.alarm_jinxuan.R
@@ -15,7 +13,6 @@ import com.example.alarm_jinxuan.model.AlarmEntity
 import com.example.alarm_jinxuan.receiver.AlarmReceiver
 import com.example.alarm_jinxuan.repository.TimerRepository
 import com.example.alarm_jinxuan.repository.TimerRepository.formatRemainingTime
-import com.example.alarm_jinxuan.service.StopWatchService
 import com.example.alarm_jinxuan.view.ring.RingActivity
 
 object AlarmNotificationUtils {
@@ -159,124 +156,6 @@ object AlarmNotificationUtils {
             .addAction(0, "关闭", dismissPI)
             .setAutoCancel(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-
-
-    }
-
-
-    /**
-     * 获取计时器的通知builder
-     */
-    fun getStopWatchBuilder(
-        context: Context,
-        channelId: String,
-        state: StopWatchManager.NotificationState
-    ): NotificationCompat.Builder {
-        // 1. 准备 PendingIntents (逻辑同前)
-        val toggleIntent =
-            Intent(context, StopWatchService::class.java).apply { action = "ACTION_TOGGLE" }
-        val togglePending = PendingIntent.getService(
-            context,
-            1,
-            toggleIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val lapIntent =
-            Intent(context, StopWatchService::class.java).apply { action = "ACTION_LAP" }
-        val lapPending = PendingIntent.getService(
-            context,
-            2,
-            lapIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // 2. 创建 MediaSession (MediaStyle 需要它来接管布局)
-        val mediaSession = MediaSessionCompat(context, "StopWatchSession")
-
-        // 3. 基础构建：设置左侧大图标和文本
-        val builder = NotificationCompat.Builder(context, channelId)
-            // 设置大图标（必须为bitmap格式）
-            .setLargeIcon(BitmapFactory.decodeResource(context.resources, R.drawable.ic_stop_watch))
-            .setSmallIcon(R.drawable.ic_alarm)
-            .setContentTitle(if (state.isRunning) "" else state.formattedTime) // 运行中由 Chronometer 接管，暂停显示静态时间
-            .setContentText(state.lapText) // 第二行文本
-            .setOngoing(state.isRunning)
-            .setSilent(true)
-            .setOnlyAlertOnce(true)
-            // 点击通知回 MainActivity
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    context,
-                    3999,
-                    Intent(context, MainActivity::class.java),
-                    PendingIntent.FLAG_IMMUTABLE
-                )
-            )
-
-        // 4. 关键：应用 MediaStyle 并配置按钮位置
-        builder.setStyle(
-            androidx.media.app.NotificationCompat.MediaStyle()
-                .setMediaSession(mediaSession.sessionToken)
-                // 主要是为了下面的两个addAction做准备（即非常重要，按钮不要折叠）
-                .setShowActionsInCompactView(0, 1)
-        )
-
-        // 5. 动态添加右侧的 Actions (顺序很重要)
-        if (state.isRunning) {
-            // --- 运行状态：显示 [暂停(蓝色圆形)] 和 [计次(灰色圆形)] ---
-
-            // 我们需要手动用代码去 Tint (着色) 图标，实现系统原生的蓝色圆形按钮效果
-            // Android 系统会自动把这两个 Action 渲染成圆形
-
-            // 按钮 0: 暂停 (着色为蓝色)
-            builder.addAction(
-                NotificationCompat.Action.Builder(
-                    R.drawable.ic_pause, "暂停", togglePending
-                ).build()
-            )
-
-            // 按钮 1: 计次 (着色为灰色)
-            builder.addAction(
-                NotificationCompat.Action.Builder(
-                    R.drawable.ic_flag, "计次", lapPending
-                ).build()
-            )
-
-            // 核心 3：运行中，让 ContentTitle 位置显示 Chronometer
-            builder.setUsesChronometer(true)
-            builder.setWhen(state.baseTime)
-
-        } else {
-            // --- 暂停状态：显示 [开始(蓝色圆形)] 和 [重置(灰色圆形)] ---
-
-            // 按钮 0: 开始 (蓝色)
-            builder.addAction(
-                NotificationCompat.Action.Builder(
-                    R.drawable.ic_begin, "开始", togglePending
-                ).build()
-            )
-
-            // 按钮 1: 重置 (灰色)
-            val resetIntent =
-                Intent(context, StopWatchService::class.java).apply { action = "ACTION_RESET" }
-            val resetPending = PendingIntent.getService(
-                context,
-                3,
-                resetIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            builder.addAction(
-                NotificationCompat.Action.Builder(
-                    R.drawable.ic_reopen, "重置", resetPending
-                ).build()
-            )
-
-            // 暂停时关闭系统计时器，setContentTitle 里的静态时间就会显示出来
-            builder.setUsesChronometer(false)
-        }
-
-        return builder
     }
 
 
