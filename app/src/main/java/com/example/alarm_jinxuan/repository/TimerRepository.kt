@@ -67,4 +67,9 @@ object TimerRepository {
     fun setRunning(running: Boolean) {
         _isRunning.value = running
     }
+
+    /**
+     * 超时回调：当计时器时间到0时触发
+     */
+    var onTimeOutCallback: (() -> Unit)? = null
 }

@@ -17,6 +17,7 @@ import com.example.alarm_jinxuan.utils.MediaUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import android.util.Log
 
 class TimerService : LifecycleService() {
     private val channelId = "ALARM_TIMER"
@@ -30,8 +31,10 @@ class TimerService : LifecycleService() {
 
     override fun onCreate() {
         super.onCreate()
-        // 2. Service 启动时，先确保渠道已经创建好
+        // 1. Service 启动时，先确保渠道已经创建好
         createNotificationChannel()
+        // 2. 监听运行状态（只初始化一次）
+        observeRepository()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -39,24 +42,31 @@ class TimerService : LifecycleService() {
         when (intent?.action) {
             // 开始启动闹钟
             "ACTION_START" -> startAlarm()
-            // 闹钟暂停
-            "ACTION_PAUSE" -> refreshNotification()
-            // 超时处理
-            "ACTION_TIMEOUT" -> startAlarmTimeOut()
-            // 重置（通知栏关闭逻辑）
+            // 暂停
+            "ACTION_PAUSE" -> {
+                // 暂停时只刷新通知，不重新启动 job
+                refreshNotification()
+            }
+            // 恢复计时（暂停后继续）
+            "ACTION_RESUME" -> {
+                // 重新启动计时 job
+                updateTimerJob()
+                refreshNotification()
+            }
+            // 停止响铃和通知，但保持服务运行
             "ACTION_STOP_SERVICE" -> {
                 timerJob?.cancel()
-                // 同时停止响铃
+                // 停止运行状态，防止监听器触发新通知
+                TimerRepository.setRunning(false)
+                // 停止响铃
                 MediaUtils.stop(this)
+                // 移除前台服务状态并取消通知
+                stopForeground(STOP_FOREGROUND_REMOVE)
                 // 清理所有通知
                 notificationManager.cancel(0)
-                stopSelf()
-            } // 接收来自 Receiver 的自杀指令
+            }
         }
 
-        observeRepository()
-        // 响铃
-//        MediaUtils.startRingtonePreview(R.raw.alarm_timer_beep, this)
         return START_NOT_STICKY
     }
 
@@ -110,6 +120,7 @@ class TimerService : LifecycleService() {
         timerJob = lifecycleScope.launch {
             var timeout = -1L
             var ring = true
+            var hasNotifiedTimeout = false
             while (TimerRepository.isRunning.value) {
                 refreshNotification()
                 // 时间超时
@@ -124,6 +135,12 @@ class TimerService : LifecycleService() {
                     if (ring) {
                         MediaUtils.startRingtonePreview(R.raw.alarm_timer_beep,this@TimerService)
                         ring = false
+                    }
+
+                    // 通知 Fragment 时间已到（只通知一次）
+                    if (!hasNotifiedTimeout) {
+                        TimerRepository.onTimeOutCallback?.invoke()
+                        hasNotifiedTimeout = true
                     }
                 }
                 delay(1000)
@@ -177,6 +194,7 @@ class TimerService : LifecycleService() {
     }
 
     override fun onBind(intent: Intent): IBinder {
+        super.onBind(intent)
         TODO("Not yet implemented")
     }
 

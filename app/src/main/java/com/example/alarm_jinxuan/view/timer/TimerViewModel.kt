@@ -7,6 +7,7 @@ import com.example.alarm_jinxuan.repository.TimerRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import android.util.Log
 
 class TimerViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -99,6 +100,14 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
 //                TimerRepository.setRunning(false)
 //            }
         }
+    }
+
+    /**
+     * 同步剩余时间为0（由 Service 超时时调用）
+     */
+    fun syncRemainingToZero() {
+        _remainingSeconds.value = 0L
+        TimerRepository.remainingNanos = 0L
     }
 
     // 格式化时间字符串

@@ -15,8 +15,12 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import android.util.Log
 import com.aigestudio.wheelpicker.WheelPicker
 import com.example.alarm_jinxuan.databinding.FragmentTimerBinding
+import com.example.alarm_jinxuan.repository.TimerRepository
 import com.example.alarm_jinxuan.service.TimerService
 import com.example.alarm_jinxuan.utils.SharedClockComponents
 
@@ -26,6 +30,8 @@ class TimerFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: TimerViewModel by activityViewModels()
+
+    private val TAG = "TimerFragment"
 
     // 小时数据: 00 到 99
     private val hourData = (0..99).map { String.format("%02d", it) }
@@ -43,6 +49,33 @@ class TimerFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // 设置超时回调：当 Service 检测到时间到0时，同步 ViewModel 的剩余时间为0
+        TimerRepository.onTimeOutCallback = {
+            viewModel.syncRemainingToZero()
+        }
+
+        // 监听剩余时间变化，当时间到0时合并按钮为启动按钮
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.remainingSeconds.collect { remaining ->
+                // 只有在设置了计时器（repoTotal > 0）且时间到0时才合并按钮
+                if (TimerRepository.totalNanos > 0L && remaining <= 0L) {
+                    // 隐藏左侧按钮，显示中间启动按钮
+                    binding.wheelHour.visibility = View.VISIBLE
+                    binding.wheelMinute.visibility = View.VISIBLE
+                    binding.wheelSecond.visibility = View.VISIBLE
+                    binding.btnLeftTimer.visibility = View.GONE
+                    binding.btnRightTimer.visibility = View.GONE
+                    binding.add.visibility = View.VISIBLE
+                    binding.composeView.visibility = View.GONE
+                    binding.add.alpha = 1f
+                    binding.add.scaleX = 1f
+                    binding.add.scaleY = 1f
+                } else {
+                    Log.d(TAG, "🔓 正常状态：显示左右按钮")
+                }
+            }
+        }
 
         // 设置滚轮监听器
         val wheelListener = object : WheelPicker.OnItemSelectedListener {
@@ -68,13 +101,6 @@ class TimerFragment : Fragment() {
                 val total by viewModel.totalSeconds.collectAsState()
                 val remaining by viewModel.remainingSeconds.collectAsState()
                 val isRunning by viewModel.isRunning.collectAsState()
-
-                if (total != 0L && remaining <= 0L) {
-                    binding.btnLeftTimer.alpha = 0.4f
-                    binding.btnRightTimer.alpha = 0.4f
-                    // 创建服务service
-//                    createService()
-                }
 
                 // 计时所用的协程
                 LaunchedEffect(isRunning) {
@@ -144,9 +170,9 @@ class TimerFragment : Fragment() {
             createService("ACTION_START")
         }
 
-        // 重置按钮
+        // 重置按钮（时间到时禁用）
         binding.btnLeftTimer.setOnClickListener {
-            if (viewModel.totalSeconds.value != 0L && viewModel.remainingSeconds.value <= 0L) {
+            if (TimerRepository.totalNanos > 0L && viewModel.remainingSeconds.value <= 0L) {
                 return@setOnClickListener
             }
             viewModel.reset()
@@ -167,12 +193,23 @@ class TimerFragment : Fragment() {
             binding.composeView.visibility = View.GONE
         }
 
-        // 暂停/开始按钮
+        // 暂停/开始按钮（时间到时允许重新开始）
         binding.btnRightTimer.setOnClickListener {
-            if (viewModel.totalSeconds.value != 0L && viewModel.remainingSeconds.value <= 0L) {
-                return@setOnClickListener
-            }
+            val wasRunning = TimerRepository.isRunning.value
             viewModel.toggle()
+
+            // 根据状态变化发送正确的 action 到 Service
+            if (wasRunning) {
+                // 从运行变为暂停
+                createService("ACTION_PAUSE")
+            } else {
+                // 从暂停变为运行，检查是否是首次启动
+                if (TimerRepository.totalNanos > 0L) {
+                    // 恢复计时（之前暂停过）
+                    createService("ACTION_RESUME")
+                }
+                // 首次启动的逻辑在 add 按钮中处理
+            }
         }
     }
 
@@ -270,19 +307,7 @@ class TimerFragment : Fragment() {
         }
     }
 
-
-    /**
-     * 获取当前选中的总秒数 (用于启动倒计时)
-     */
-    private fun getTotalSeconds(): Long {
-        val h = binding.wheelHour.currentItemPosition // 对应 0..99
-        val m = binding.wheelMinute.currentItemPosition  // 对应 0..59
-        val s = binding.wheelSecond.currentItemPosition  // 对应 0..59
-
-        return (h * 3600L) + (m * 60L) + s
-    }
-
-    override fun onDestroyView() {
+     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
