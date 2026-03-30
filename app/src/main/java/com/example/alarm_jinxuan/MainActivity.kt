@@ -12,6 +12,9 @@ import com.example.alarm_jinxuan.view.stopWatch.StopWatchFragment
 import com.example.alarm_jinxuan.view.timer.TimerFragment
 import com.example.alarm_jinxuan.view.worldClock.WorldClockFragment
 import com.example.alarm_jinxuan.utils.PermissionUtils
+import com.hjq.permissions.XXPermissions
+import com.hjq.permissions.Permission
+import com.hjq.permissions.OnPermissionCallback
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -29,14 +32,8 @@ class MainActivity : AppCompatActivity() {
 
         AlarmRepository.init(this)
 
-        // 检查并请求闹钟相关权限
-        PermissionUtils.checkAndRequestPermissions(this) { allGranted ->
-            // 可以在这里添加权限授予后的处理逻辑
-            if (!allGranted) {
-                // 用户没有授予权限，可以记录日志或显示提示
-                Toast.makeText(this,"相关权限并未全部开启，会影响后续闹钟体验", Toast.LENGTH_SHORT)
-            }
-        }
+        // 使用 XXPermissions 申请悬浮窗和通知权限
+        requestXXPermissions()
 
         // 默认显示首页
         if (savedInstanceState == null) {
@@ -52,7 +49,36 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
+    }
 
+    /**
+     * 使用 XXPermissions 申请权限
+     */
+    private fun requestXXPermissions() {
+        XXPermissions.with(this)
+            .permission(
+                Permission.POST_NOTIFICATIONS,      // 通知权限 (Android 13+)
+                Permission.SYSTEM_ALERT_WINDOW       // 悬浮窗权限
+            )
+            .request(object : OnPermissionCallback {
+                override fun onGranted(permissions: MutableList<String>, all: Boolean) {
+                    if (all) {
+                        Toast.makeText(this@MainActivity, "权限申请成功", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@MainActivity, "部分权限未授予，可能影响功能", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onDenied(permissions: MutableList<String>, never: Boolean) {
+                    if (never) {
+                        Toast.makeText(this@MainActivity, "权限被永久拒绝，请去设置中开启", Toast.LENGTH_LONG).show()
+                        // 如果是被永久拒绝就跳转到应用设置页面
+                        XXPermissions.startPermissionActivity(this@MainActivity, permissions)
+                    } else {
+                        Toast.makeText(this@MainActivity, "权限被拒绝", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            })
     }
 
     private fun switchFragment(tag: String) {
